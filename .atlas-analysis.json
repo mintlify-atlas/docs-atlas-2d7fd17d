@@ -1,0 +1,110 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "fzf",
+  "projectDescription": "A command-line fuzzy finder for interactive filtering of any kind of list",
+  "theme": "aspen",
+  "primaryColor": "#d75f5f",
+  "lightColor": "#f5f5f5",
+  "darkColor": "#1c1c1c",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Usage",
+            "pages": [
+              "usage/basic-usage",
+              "usage/search-syntax",
+              "usage/display-modes",
+              "usage/customization"
+            ]
+          },
+          {
+            "group": "Shell Integration",
+            "pages": [
+              "shell/overview",
+              "shell/key-bindings",
+              "shell/fuzzy-completion",
+              "shell/bash",
+              "shell/zsh",
+              "shell/fish"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/preview-window",
+              "advanced/event-bindings",
+              "advanced/reload",
+              "advanced/external-programs",
+              "advanced/ripgrep-integration",
+              "advanced/performance"
+            ]
+          },
+          {
+            "group": "Vim Integration",
+            "pages": [
+              "vim/setup",
+              "vim/usage"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/command-options",
+              "reference/environment-variables",
+              "reference/color-schemes",
+              "reference/examples"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Portable single binary with no dependencies",
+    "Blazing fast fuzzy matching for millions of items",
+    "Fully customizable through event-action bindings",
+    "Built-in shell integrations for Bash, Zsh, and Fish",
+    "Preview window with syntax highlighting support",
+    "Multiple display modes (fullscreen, height, tmux popup)",
+    "Advanced search syntax with multiple operators",
+    "Dynamic list reloading and interactive filtering"
+  ],
+  "publicApiSurface": [
+    "fzf - Main interactive finder command",
+    "--bind - Key/event binding configuration",
+    "--preview - Preview window command",
+    "--height - Non-fullscreen display mode",
+    "--tmux - Tmux popup mode",
+    "--multi - Multi-select mode",
+    "--filter - Non-interactive filter mode",
+    "--ansi - ANSI color code processing",
+    "--color - Color scheme customization",
+    "--query - Initial query string",
+    "--select-1 - Auto-select if one match",
+    "--exit-0 - Auto-exit if no match",
+    "--delimiter - Field delimiter",
+    "--nth - Field index for search",
+    "--with-nth - Field index for display",
+    "CTRL-T - Paste selected files (shell binding)",
+    "CTRL-R - Paste selected command from history (shell binding)",
+    "ALT-C - Change to selected directory (shell binding)",
+    "FZF_DEFAULT_COMMAND - Default input command",
+    "FZF_DEFAULT_OPTS - Default options"
+  ]
+}
