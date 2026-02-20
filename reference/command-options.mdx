@@ -1,0 +1,771 @@
+---
+title: Command-Line Options
+description: Complete reference for all fzf command-line options organized by category
+---
+
+fzf provides a comprehensive set of command-line options to customize its behavior. This reference organizes all available options by category.
+
+## Search Options
+
+Configure how fzf searches and matches input.
+
+<ParamField path="-e, --exact" type="flag">
+  Enable exact-match mode instead of fuzzy matching
+</ParamField>
+
+<ParamField path="+x, --no-extended" type="flag">
+  Disable extended-search mode
+</ParamField>
+
+<ParamField path="-i, --ignore-case" type="flag">
+  Case-insensitive match
+</ParamField>
+
+<ParamField path="+i, --no-ignore-case" type="flag">
+  Case-sensitive match
+</ParamField>
+
+<ParamField path="--smart-case" type="flag" default="true">
+  Smart-case match (case-insensitive unless query contains uppercase characters)
+</ParamField>
+
+<ParamField path="--scheme" type="string" default="default">
+  Scoring scheme for ranking results
+  
+  **Options:**
+  - `default` - Generic scheme for any input
+  - `path` - Optimized for file paths
+  - `history` - Optimized for command history (chronological ordering)
+</ParamField>
+
+<ParamField path="-n, --nth" type="string">
+  Comma-separated list of field index expressions for limiting search scope
+  
+  Each can be a non-zero integer or a range expression `[BEGIN]..[END]`
+  
+  ```bash
+  # Search only in the 2nd field
+  fzf --nth 2
+  
+  # Search in fields 2 through 4
+  fzf --nth 2..4
+  ```
+</ParamField>
+
+<ParamField path="--with-nth" type="string">
+  Transform the presentation of each line using field index expressions
+  
+  ```bash
+  # Display only fields 1 and 3
+  echo -e "a b c\nd e f" | fzf --with-nth 1,3
+  ```
+</ParamField>
+
+<ParamField path="--accept-nth" type="string">
+  Define which fields to print on accept
+</ParamField>
+
+<ParamField path="-d, --delimiter" type="string">
+  Field delimiter regex (default: AWK-style whitespace)
+  
+  ```bash
+  # Use colon as delimiter
+  fzf --delimiter ':'
+  ```
+</ParamField>
+
+<ParamField path="+s, --no-sort" type="flag">
+  Do not sort the result
+</ParamField>
+
+<ParamField path="--literal" type="flag">
+  Do not normalize latin script letters (disable diacritic normalization)
+</ParamField>
+
+<ParamField path="--tail" type="number">
+  Maximum number of items to keep in memory
+</ParamField>
+
+<ParamField path="--disabled" type="flag">
+  Do not perform search (useful when using fzf as a selector only)
+</ParamField>
+
+<ParamField path="--tiebreak" type="string" default="length">
+  Comma-separated list of sort criteria to apply when scores are tied
+  
+  **Options:** `length`, `chunk`, `pathname`, `begin`, `end`, `index`
+  
+  ```bash
+  fzf --tiebreak=length,begin
+  ```
+</ParamField>
+
+## Input/Output Options
+
+Control how fzf reads input and writes output.
+
+<ParamField path="--read0" type="flag">
+  Read input delimited by ASCII NUL characters instead of newlines
+</ParamField>
+
+<ParamField path="--print0" type="flag">
+  Print output delimited by ASCII NUL characters
+</ParamField>
+
+<ParamField path="--ansi" type="flag">
+  Enable processing of ANSI color codes
+  
+  <Tip>Use this when piping colored output from tools like `rg --color=always`</Tip>
+</ParamField>
+
+<ParamField path="--sync" type="flag">
+  Synchronous search for multi-staged filtering
+</ParamField>
+
+## Global Style Options
+
+<ParamField path="--style" type="string" default="default">
+  Apply a style preset
+  
+  **Options:**
+  - `default` - Standard fzf appearance
+  - `minimal` - Minimal UI elements
+  - `full[:BORDER_STYLE]` - Full UI with all elements
+  
+  ```bash
+  fzf --style full
+  fzf --style full:rounded
+  ```
+</ParamField>
+
+<ParamField path="--color" type="string">
+  Base scheme and/or custom colors
+  
+  See [Color Schemes](/reference/color-schemes) for detailed information.
+</ParamField>
+
+<ParamField path="--no-color" type="flag">
+  Disable colors
+</ParamField>
+
+<ParamField path="--no-bold" type="flag">
+  Do not use bold text
+</ParamField>
+
+## Display Mode Options
+
+<ParamField path="--height" type="string">
+  Display fzf window below the cursor instead of fullscreen
+  
+  Format: `[~]HEIGHT[%]`
+  
+  - Percentage: `--height 40%`
+  - Absolute lines: `--height 15`
+  - Negative value: Calculate as terminal height minus value
+  - `~` prefix: Determine height according to input size
+  
+  ```bash
+  # 40% of terminal height
+  fzf --height 40%
+  
+  # Auto-adjust height, max 100%
+  seq 3 | fzf --height ~100%
+  
+  # Terminal height - 3
+  fzf --height -3
+  ```
+</ParamField>
+
+<ParamField path="--min-height" type="string" default="10+">
+  Minimum height when `--height` is given as a percentage
+  
+  Add `+` to automatically increase the value according to other layout options
+</ParamField>
+
+<ParamField path="--tmux" type="string">
+  Start fzf in a tmux popup (requires tmux 3.3+)
+  
+  Format: `[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]][,border-native]`
+  
+  ```bash
+  # Center, 50% width and height (default)
+  fzf --tmux
+  
+  # Center, 80% width and height
+  fzf --tmux 80%
+  
+  # Bottom, 100% width, 40% height
+  fzf --tmux bottom,100%,40%
+  ```
+</ParamField>
+
+## Layout Options
+
+Customize the visual layout and appearance.
+
+<ParamField path="--layout" type="string" default="default">
+  Choose layout orientation
+  
+  **Options:**
+  - `default` - List on top, input at bottom
+  - `reverse` - Input on top, list below
+  - `reverse-list` - List reversed but input at bottom
+</ParamField>
+
+<ParamField path="--margin" type="string">
+  Screen margin (TRBL | TB,RL | T,RL,B | T,R,B,L)
+  
+  ```bash
+  # 1 line margin on all sides
+  fzf --margin 1
+  
+  # 2 lines top/bottom, 4 columns left/right
+  fzf --margin 2,4
+  ```
+</ParamField>
+
+<ParamField path="--padding" type="string">
+  Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L)
+</ParamField>
+
+<ParamField path="--border" type="string">
+  Draw border around the finder
+  
+  **Styles:** `rounded`, `sharp`, `bold`, `block`, `thinblock`, `double`, `horizontal`, `vertical`, `top`, `bottom`, `left`, `right`, `line`, `none`
+  
+  Default: `rounded`
+</ParamField>
+
+<ParamField path="--border-label" type="string">
+  Label to print on the border
+</ParamField>
+
+<ParamField path="--border-label-pos" type="string" default="0 (center)">
+  Position of the border label
+  
+  - Positive integer: Columns from left
+  - Negative integer: Columns from right
+  - Add `:bottom` suffix for bottom position
+</ParamField>
+
+## List Section Options
+
+Control the behavior and appearance of the results list.
+
+<ParamField path="-m, --multi" type="number">
+  Enable multi-select with tab/shift-tab
+  
+  Optional MAX value to limit number of selections
+  
+  ```bash
+  # Allow unlimited selections
+  fzf --multi
+  
+  # Allow up to 5 selections
+  fzf --multi=5
+  ```
+</ParamField>
+
+<ParamField path="--highlight-line" type="flag">
+  Highlight the whole current line
+</ParamField>
+
+<ParamField path="--cycle" type="flag">
+  Enable cyclic scroll (wrap around at top/bottom)
+</ParamField>
+
+<ParamField path="--wrap" type="string">
+  Enable line wrap
+  
+  **Options:** `char` (default), `word`
+  
+  ```bash
+  fzf --wrap
+  fzf --wrap=word
+  ```
+</ParamField>
+
+<ParamField path="--wrap-sign" type="string">
+  Indicator for wrapped lines
+</ParamField>
+
+<ParamField path="--no-multi-line" type="flag">
+  Disable multi-line display of items when using `--read0`
+</ParamField>
+
+<ParamField path="--raw" type="flag">
+  Enable raw mode (show non-matching items)
+</ParamField>
+
+<ParamField path="--track" type="flag">
+  Track the current selection when the result is updated
+</ParamField>
+
+<ParamField path="--tac" type="flag">
+  Reverse the order of the input
+</ParamField>
+
+<ParamField path="--gap" type="number">
+  Render empty lines between each item
+</ParamField>
+
+<ParamField path="--gap-line" type="string">
+  Draw horizontal line on each gap using the string
+  
+  Default: `┈` or `-`
+</ParamField>
+
+<ParamField path="--freeze-left" type="number">
+  Number of fields to freeze on the left (keep visible when scrolling)
+</ParamField>
+
+<ParamField path="--freeze-right" type="number">
+  Number of fields to freeze on the right
+</ParamField>
+
+<ParamField path="--keep-right" type="flag">
+  Keep the right end of the line visible on overflow
+</ParamField>
+
+<ParamField path="--scroll-off" type="number" default="0">
+  Number of screen lines to keep above or below when scrolling to the top or bottom
+</ParamField>
+
+<ParamField path="--no-hscroll" type="flag">
+  Disable horizontal scroll
+</ParamField>
+
+<ParamField path="--hscroll-off" type="number" default="10">
+  Number of screen columns to keep to the right of the highlighted substring
+</ParamField>
+
+<ParamField path="--jump-labels" type="string">
+  Label characters for jump mode
+</ParamField>
+
+<ParamField path="--gutter" type="string">
+  Character used for the gutter column
+  
+  Default: `▌` or `>`
+</ParamField>
+
+<ParamField path="--gutter-raw" type="string">
+  Character used for the gutter column in raw mode
+  
+  Default: `▖`
+</ParamField>
+
+<ParamField path="--pointer" type="string">
+  Pointer to the current line
+  
+  Default: `▌` or `>`
+</ParamField>
+
+<ParamField path="--marker" type="string">
+  Multi-select marker
+  
+  Default: `┃` or `>`
+</ParamField>
+
+<ParamField path="--marker-multi-line" type="string">
+  Multi-select marker for multi-line entries (3 elements: top, middle, bottom)
+  
+  Default: `╻┃╹`
+</ParamField>
+
+<ParamField path="--ellipsis" type="string">
+  Ellipsis to show when line is truncated
+  
+  Default: `··`
+</ParamField>
+
+<ParamField path="--tabstop" type="number" default="8">
+  Number of spaces for a tab character
+</ParamField>
+
+<ParamField path="--scrollbar" type="string">
+  Scrollbar character(s)
+  
+  Format: `C1[C2]` - C1 for list section, C2 for preview window
+</ParamField>
+
+<ParamField path="--no-scrollbar" type="flag">
+  Hide scrollbar
+</ParamField>
+
+<ParamField path="--list-border" type="string">
+  Draw border around the list section
+  
+  Same styles as `--border`
+</ParamField>
+
+<ParamField path="--list-label" type="string">
+  Label to print on the list border
+</ParamField>
+
+<ParamField path="--list-label-pos" type="string" default="0 (center)">
+  Position of the list label
+</ParamField>
+
+## Input Section Options
+
+Configure the input prompt area.
+
+<ParamField path="--no-input" type="flag">
+  Disable and hide the input section
+</ParamField>
+
+<ParamField path="--prompt" type="string" default="> ">
+  Input prompt string
+  
+  ```bash
+  fzf --prompt "Search: "
+  ```
+</ParamField>
+
+<ParamField path="--info" type="string" default="default">
+  Finder info style
+  
+  **Options:**
+  - `default` - Below input prompt
+  - `right` - Right side of input
+  - `hidden` - Hide info
+  - `inline` - Inline with input
+  - `inline-right` - Inline on right
+  - `inline[-right]:PREFIX` - With custom prefix
+</ParamField>
+
+<ParamField path="--info-command" type="string">
+  Command to generate info line dynamically
+</ParamField>
+
+<ParamField path="--separator" type="string">
+  Draw horizontal separator on info line using the string
+  
+  Default: `─` or `-`
+</ParamField>
+
+<ParamField path="--no-separator" type="flag">
+  Hide info line separator
+</ParamField>
+
+<ParamField path="--ghost" type="string">
+  Ghost text to display when the input is empty
+  
+  ```bash
+  fzf --ghost "Type to search..."
+  ```
+</ParamField>
+
+<ParamField path="--filepath-word" type="flag">
+  Make word-wise movements respect path separators
+</ParamField>
+
+<ParamField path="--input-border" type="string">
+  Draw border around the input section
+</ParamField>
+
+<ParamField path="--input-label" type="string">
+  Label to print on the input border
+</ParamField>
+
+<ParamField path="--input-label-pos" type="string" default="0 (center)">
+  Position of the input label
+</ParamField>
+
+## Preview Window Options
+
+Configure the preview pane for displaying additional content.
+
+<ParamField path="--preview" type="string">
+  Command to preview highlighted line
+  
+  Use `{}` as placeholder for the selected line
+  
+  ```bash
+  # Preview file contents
+  fzf --preview 'cat {}'
+  
+  # Preview with bat
+  fzf --preview 'bat --color=always --style=numbers {}'
+  ```
+</ParamField>
+
+<ParamField path="--preview-window" type="string" default="right:50%">
+  Preview window layout
+  
+  Format: `[up|down|left|right][,SIZE[%]][,OPTIONS]`
+  
+  **Options:**
+  - `[no]wrap[-word]` - Line wrapping
+  - `[no]cycle` - Cyclic scrolling
+  - `[no]follow` - Follow mode (like `tail -f`)
+  - `[no]info` - Show info
+  - `[no]hidden` - Start hidden
+  - `border-STYLE` - Border style
+  - `+SCROLL[OFFSETS][/DENOM]` - Scroll offset
+  - `~HEADER_LINES` - Fixed header lines
+  - `default` - Reset to default
+  - `<SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)` - Alternative layout
+  
+  ```bash
+  # Right side, 60% width
+  fzf --preview-window right:60%
+  
+  # Top, 40% height, with border
+  fzf --preview-window up:40%,border-bottom
+  
+  # With line wrapping
+  fzf --preview-window right:50%,wrap
+  ```
+</ParamField>
+
+<ParamField path="--preview-border" type="string">
+  Short for `--preview-window=border-STYLE`
+</ParamField>
+
+<ParamField path="--preview-label" type="string">
+  Label for the preview window border
+</ParamField>
+
+<ParamField path="--preview-label-pos" type="string" default="0 (center)">
+  Position of the preview label
+</ParamField>
+
+<ParamField path="--preview-wrap-sign" type="string">
+  Indicator for wrapped lines in the preview window
+</ParamField>
+
+## Header Options
+
+<ParamField path="--header" type="string">
+  String to print as header
+  
+  ```bash
+  fzf --header "Select a file"
+  ```
+</ParamField>
+
+<ParamField path="--header-lines" type="number">
+  The first N lines of the input are treated as header (non-selectable)
+  
+  ```bash
+  # First line is header
+  ps aux | fzf --header-lines=1
+  ```
+</ParamField>
+
+<ParamField path="--header-first" type="flag">
+  Print header before the prompt line
+</ParamField>
+
+<ParamField path="--header-border" type="string">
+  Draw border around the header section
+</ParamField>
+
+<ParamField path="--header-lines-border" type="string">
+  Display header from `--header-lines` with a separate border
+  
+  Pass `none` to separate it without a border
+</ParamField>
+
+<ParamField path="--header-label" type="string">
+  Label to print on the header border
+</ParamField>
+
+<ParamField path="--header-label-pos" type="string" default="0 (center)">
+  Position of the header label
+</ParamField>
+
+## Footer Options
+
+<ParamField path="--footer" type="string">
+  String to print as footer
+</ParamField>
+
+<ParamField path="--footer-border" type="string" default="line">
+  Draw border around the footer section
+</ParamField>
+
+<ParamField path="--footer-label" type="string">
+  Label to print on the footer border
+</ParamField>
+
+<ParamField path="--footer-label-pos" type="string" default="0 (center)">
+  Position of the footer label
+</ParamField>
+
+## Scripting Options
+
+Options for non-interactive use and shell scripting.
+
+<ParamField path="-q, --query" type="string">
+  Start the finder with the given query
+  
+  ```bash
+  fzf --query "initial search"
+  ```
+</ParamField>
+
+<ParamField path="-1, --select-1" type="flag">
+  Automatically select the only match
+</ParamField>
+
+<ParamField path="-0, --exit-0" type="flag">
+  Exit immediately when there's no match
+</ParamField>
+
+<ParamField path="-f, --filter" type="string">
+  Print matches for the initial query and exit (non-interactive mode)
+  
+  ```bash
+  # Filter and print matches
+  echo -e "apple\nbanana\napricot" | fzf -f ap
+  # Output: apple, apricot
+  ```
+</ParamField>
+
+<ParamField path="--print-query" type="flag">
+  Print query as the first line of output
+</ParamField>
+
+<ParamField path="--expect" type="string">
+  Comma-separated list of keys to complete fzf
+  
+  ```bash
+  fzf --expect=ctrl-y,ctrl-t
+  ```
+</ParamField>
+
+## Key/Event Binding Options
+
+<ParamField path="--bind" type="string">
+  Custom key/event bindings
+  
+  Format: `KEY:ACTION[,KEY:ACTION...]`
+  
+  See `man fzf` for the full list of available keys and actions
+  
+  ```bash
+  # Bind ctrl-y to copy to clipboard
+  fzf --bind 'ctrl-y:execute-silent(echo {} | pbcopy)'
+  
+  # Multiple bindings
+  fzf --bind 'ctrl-a:select-all,ctrl-d:deselect-all'
+  ```
+</ParamField>
+
+## Advanced Options
+
+<ParamField path="--with-shell" type="string">
+  Shell command and flags to start child processes with
+  
+  ```bash
+  fzf --with-shell 'bash -c'
+  ```
+</ParamField>
+
+<ParamField path="--listen" type="string">
+  Start HTTP server to receive actions
+  
+  Format: `[ADDR:]PORT` for TCP or `SOCKET_PATH` for Unix socket
+  
+  ```bash
+  # TCP on port 6266
+  fzf --listen 6266
+  
+  # Unix socket
+  fzf --listen /tmp/fzf.sock
+  ```
+  
+  <Tip>Use `--listen-unsafe` to allow remote process execution</Tip>
+</ParamField>
+
+## Directory Traversal Options
+
+Only used when `$FZF_DEFAULT_COMMAND` is not set.
+
+<ParamField path="--walker" type="string" default="file,follow,hidden">
+  Walker options
+  
+  **Options:** `file`, `dir`, `follow`, `hidden`
+  
+  ```bash
+  # Walk files and directories, follow symlinks
+  fzf --walker file,dir,follow
+  ```
+</ParamField>
+
+<ParamField path="--walker-root" type="string" default=".">
+  List of directories to walk (space-separated)
+  
+  ```bash
+  fzf --walker-root /home /etc
+  ```
+</ParamField>
+
+<ParamField path="--walker-skip" type="string" default=".git,node_modules">
+  Comma-separated list of directory names to skip
+  
+  ```bash
+  fzf --walker-skip .git,node_modules,target
+  ```
+</ParamField>
+
+## History Options
+
+<ParamField path="--history" type="string">
+  File to store fzf search history (not shell command history)
+  
+  ```bash
+  fzf --history ~/.fzf_history
+  ```
+</ParamField>
+
+<ParamField path="--history-size" type="number" default="1000">
+  Maximum number of entries to keep in the history file
+</ParamField>
+
+## Shell Integration Options
+
+<ParamField path="--bash" type="flag">
+  Print script to set up Bash shell integration
+  
+  ```bash
+  eval "$(fzf --bash)"
+  ```
+</ParamField>
+
+<ParamField path="--zsh" type="flag">
+  Print script to set up Zsh shell integration
+  
+  ```zsh
+  source <(fzf --zsh)
+  ```
+</ParamField>
+
+<ParamField path="--fish" type="flag">
+  Print script to set up Fish shell integration
+  
+  ```fish
+  fzf --fish | source
+  ```
+</ParamField>
+
+## Help Options
+
+<ParamField path="--version" type="flag">
+  Display version information and exit
+</ParamField>
+
+<ParamField path="--help" type="flag">
+  Show help message
+</ParamField>
+
+<ParamField path="--man" type="flag">
+  Show man page
+  
+  ```bash
+  fzf --man
+  ```
+</ParamField>

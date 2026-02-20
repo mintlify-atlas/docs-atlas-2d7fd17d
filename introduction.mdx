@@ -1,0 +1,164 @@
+---
+title: Introduction
+description: A blazing-fast command-line fuzzy finder that helps you navigate files, command history, processes, and more with ease.
+---
+
+<Note>
+  fzf is a general-purpose command-line fuzzy finder that works as an interactive filter for any kind of list.
+</Note>
+
+fzf implements a "fuzzy" matching algorithm, allowing you to quickly type patterns with omitted characters and still get the results you want. Whether you're searching through files, command history, processes, hostnames, bookmarks, or git commits, fzf makes navigation effortless.
+
+## Why fzf?
+
+<CardGroup cols={2}>
+  <Card title="Portable" icon="box">
+    Distributed as a single binary for easy installation across all platforms
+  </Card>
+  <Card title="Fast" icon="bolt">
+    Optimized to process millions of items instantly with minimal overhead
+  </Card>
+  <Card title="Versatile" icon="wrench">
+    Fully customizable through an event-action binding mechanism
+  </Card>
+  <Card title="All-inclusive" icon="puzzle-piece">
+    Built-in integrations for Bash, Zsh, Fish, Vim, and Neovim
+  </Card>
+</CardGroup>
+
+## Key features
+
+### Interactive filtering
+
+fzf reads from STDIN and writes selected items to STDOUT, making it a perfect filter for any command-line workflow:
+
+```bash
+# Find and open a file
+find * -type f | fzf > selected
+
+# Or use fzf directly to traverse the file system
+vim $(fzf)
+```
+
+### Powerful search syntax
+
+Use advanced search patterns to find exactly what you need:
+
+| Pattern | Description |
+| --- | --- |
+| `sbtrkt` | Fuzzy match |
+| `'wild` | Exact match (quoted) |
+| `^music` | Prefix match |
+| `.mp3$` | Suffix match |
+| `!fire` | Inverse match |
+
+```bash
+# Find MP3 files that start with "music" but don't contain "fire"
+fzf --query "^music .mp3$ !fire"
+```
+
+### Multiple display modes
+
+<CodeGroup>
+
+```bash Fullscreen mode (default)
+fzf
+```
+
+```bash Height mode
+# Start below cursor with 40% height
+fzf --height 40% --layout reverse --border
+```
+
+```bash Tmux popup mode
+# Open in tmux popup if available
+fzf --tmux center,80%
+```
+
+</CodeGroup>
+
+### Shell integration
+
+Once installed, fzf provides powerful key bindings:
+
+- **CTRL-T** - Paste selected files and directories onto the command-line
+- **CTRL-R** - Paste selected command from history
+- **ALT-C** - cd into the selected directory
+
+### Preview window
+
+Preview file contents, git diffs, or any output while navigating:
+
+```bash
+# Preview files with syntax highlighting
+fzf --preview 'bat --color=always {}'
+
+# Interactive ripgrep with preview
+rg --column --line-number --no-heading --color=always "" | \
+  fzf --ansi --preview 'bat --color=always {1} --highlight-line {2}'
+```
+
+## Use cases
+
+fzf excels at filtering any kind of list:
+
+<CardGroup cols={2}>
+  <Card title="File navigation" icon="folder-open">
+    Quickly find and open files in large codebases
+  </Card>
+  <Card title="Command history" icon="clock-rotate-left">
+    Search through your shell history interactively
+  </Card>
+  <Card title="Process management" icon="microchip">
+    Find and manage running processes
+  </Card>
+  <Card title="Git integration" icon="code-branch">
+    Search commits, branches, and diffs
+  </Card>
+  <Card title="SSH hosts" icon="server">
+    Fuzzy search your SSH config
+  </Card>
+  <Card title="Custom scripts" icon="terminal">
+    Integrate into your own tools and workflows
+  </Card>
+</CardGroup>
+
+## Getting started
+
+<Steps>
+  <Step title="Install fzf">
+    Follow the [installation guide](/installation) for your platform
+  </Step>
+  <Step title="Set up shell integration">
+    Enable key bindings and fuzzy completion for your shell
+  </Step>
+  <Step title="Try it out">
+    Press CTRL-R to search your command history, or CTRL-T to find files
+  </Step>
+</Steps>
+
+<Tip>
+  Check out the [quickstart guide](/quickstart) to get up and running in 5 minutes!
+</Tip>
+
+## Performance
+
+fzf is incredibly fast and can handle millions of items:
+
+- Optimized fuzzy matching algorithm
+- Minimal memory footprint
+- Instant search-as-you-type feedback
+- Efficient ANSI color code parsing
+
+## Community and support
+
+fzf is actively developed and maintained with a vibrant community:
+
+- [GitHub Repository](https://github.com/junegunn/fzf)
+- [Wiki with examples](https://github.com/junegunn/fzf/wiki/examples)
+- [Advanced examples](https://github.com/junegunn/fzf/blob/master/ADVANCED.md)
+- [Related projects](https://github.com/junegunn/fzf/wiki/Related-projects)
+
+<Note>
+  fzf is licensed under the MIT License and is free to use for any purpose.
+</Note>

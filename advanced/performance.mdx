@@ -1,0 +1,504 @@
+---
+title: Performance Optimization
+description: Tips and techniques for maximizing fzf performance with large datasets and complex workflows
+---
+
+fzf is designed to be fast, handling millions of items with ease. However, certain options and patterns can impact performance. This guide helps you optimize fzf for your specific use case.
+
+## Performance Overview
+
+fzf's performance depends on several factors:
+
+- **Input size**: Number of items to filter
+- **Scanning options**: ANSI parsing, tokenization, field extraction
+- **Matching algorithm**: Fuzzy vs exact matching
+- **Preview commands**: External process execution
+- **Update frequency**: How often the list reloads
+
+<Tip>
+For most use cases, fzf is fast enough without optimization. Only optimize when you notice actual performance issues.
+</Tip>
+
+## Options That Affect Performance
+
+### --ansi
+
+The `--ansi` option tells fzf to extract and parse ANSI color codes in the input, making the initial scanning slower.
+
+```bash
+# Slower: Parses ANSI codes
+rg --color=always pattern | fzf --ansi
+
+# Faster: No ANSI parsing (but no colors)
+rg --color=never pattern | fzf
+```
+
+<Warning>
+**Do not add `--ansi` to `$FZF_DEFAULT_OPTS`**. Only use it when you actually need colored input, such as when piping from ripgrep or other tools with colored output.
+</Warning>
+
+### --nth
+
+The `--nth` option makes fzf tokenize each line to extract specific fields for matching. This adds overhead.
+
+```bash
+# Slower: Tokenizes each line
+ps -ef | fzf --nth=8..
+
+# Faster: Match entire line
+ps -ef | fzf
+```
+
+**Use `--nth` only when necessary**. If you can preprocess your input to include only relevant fields, you'll get better performance.
+
+### --delimiter
+
+A plain string delimiter is faster than a regular expression delimiter.
+
+```bash
+# Faster: String delimiter
+fzf --delimiter ':'
+
+# Slower: Regex delimiter
+fzf --delimiter '[:\s]+'
+```
+
+<Tip>
+Prefer simple string delimiters like `:`, `,`, or `|` over complex regex patterns.
+</Tip>
+
+### --with-nth
+
+The `--with-nth` option makes fzf tokenize and reassemble each line for display, which is slower than showing lines as-is.
+
+```bash
+# Slower: Tokenizes and reassembles
+fzf --delimiter ':' --with-nth=1,3
+
+# Faster: Show entire line
+fzf
+```
+
+**Alternative**: Preprocess your input with `awk`, `cut`, or similar tools:
+
+```bash
+# Instead of this:
+cat data.txt | fzf --delimiter ':' --with-nth=1,3
+
+# Do this:
+cat data.txt | awk -F: '{print $1 " " $3}' | fzf
+```
+
+## Input Source Optimization
+
+### Limit Input Size
+
+The less data fzf needs to process, the faster it will be.
+
+```bash
+# Slow: Search all files
+find / -type f | fzf
+
+# Fast: Limit scope
+find ~/projects -type f | fzf
+
+# Faster: Use fd with smart defaults
+fd --type f | fzf
+```
+
+### Use Fast Input Generators
+
+Some commands are faster than others for generating file lists.
+
+```bash
+# Slower
+find . -type f | fzf
+
+# Faster: fd is optimized and respects .gitignore
+fd --type f | fzf
+
+# Faster: ripgrep for file listing
+rg --files | fzf
+```
+
+### Prefilter Data
+
+Filter data before passing it to fzf:
+
+```bash
+# Slow: fzf processes all files
+find . -type f | fzf
+
+# Fast: grep filters first
+find . -type f | grep '\.py$' | fzf
+
+# Even better: Let fd filter
+fd --extension py | fzf
+```
+
+## Scheme Selection
+
+fzf provides specialized schemes optimized for different input types:
+
+```bash
+# Generic (default)
+fzf --scheme=default
+
+# Optimized for file paths
+fd --type f | fzf --scheme=path
+
+# Optimized for chronological data (history, logs)
+history | fzf --scheme=history
+```
+
+<Tip>
+Use `--scheme=path` when filtering file paths for better ranking and performance.
+</Tip>
+
+## Preview Window Optimization
+
+### Limit Preview Output
+
+Preview commands that generate large output can slow down fzf:
+
+```bash
+# Slow: Previews entire file
+fzf --preview 'cat {}'
+
+# Faster: Limit output
+fzf --preview 'head -100 {}'
+
+# Even better: Use bat with line range
+fzf --preview 'bat --color=always --line-range :500 {}'
+```
+
+### Lazy Preview Loading
+
+Use preview window size limits to prevent rendering huge amounts of text:
+
+```bash
+# Limit preview window size
+fzf --preview 'cat {}' --preview-window='50%:wrap'
+```
+
+### Conditional Preview
+
+Skip preview for certain file types:
+
+```bash
+fzf --preview 'bash -c "if [[ {} =~ \.(jpg|png|gif)$ ]]; then
+    echo \"Image file\"
+  else
+    bat --color=always {}
+  fi"'
+```
+
+## Reload Optimization
+
+### Debounce Reloads
+
+When binding reload to the `change` event, always add a delay:
+
+```bash
+# Slow: Reloads immediately on every keystroke
+fzf --bind 'change:reload:rg {q}'
+
+# Fast: Debounces with 0.1 second delay
+fzf --bind 'change:reload:sleep 0.1; rg {q} || true'
+```
+
+<Warning>
+Without debouncing, typing quickly can spawn dozens of processes, causing lag and high CPU usage.
+</Warning>
+
+### Optimize Reload Commands
+
+Make your reload commands as fast as possible:
+
+```bash
+# Slow: Complex pipeline
+fzf --bind 'ctrl-r:reload(find . -type f | sort | uniq)'
+
+# Fast: Single efficient command
+fzf --bind 'ctrl-r:reload(fd --type f)'
+```
+
+### Conditional Reloads
+
+Only reload when necessary:
+
+```bash
+fzf --bind 'ctrl-r:transform:
+  [[ $FZF_QUERY == $LAST_QUERY ]] &&
+    echo "" ||
+    echo "reload(rg {q})"'
+```
+
+## Matching Algorithm
+
+### Fuzzy vs Exact Matching
+
+Exact matching is faster than fuzzy matching:
+
+```bash
+# Slower: Fuzzy matching (default)
+fzf
+
+# Faster: Exact matching
+fzf --exact
+```
+
+However, fuzzy matching is usually fast enough and provides better UX. Only switch to exact matching if you have performance issues.
+
+### Disable Search When Using Reload
+
+When using reload with external filtering (like ripgrep), disable fzf's matching:
+
+```bash
+# fzf doesn't need to filter - ripgrep does all the work
+fzf --disabled --bind 'change:reload:rg {q}'
+```
+
+## Memory Optimization
+
+### Limit History Size
+
+When tailing logs or handling streaming data, limit the buffer:
+
+```bash
+# Preview only last 10000 lines
+fzf --preview 'kubectl logs --tail=10000 {}' --preview-window 'up:follow'
+```
+
+### Clear Unused Data
+
+For long-running fzf sessions, reload with fresh data periodically:
+
+```bash
+fzf --bind 'ctrl-r:reload(ps -ef)'
+```
+
+## Real-World Optimization Examples
+
+### File Browser
+
+```bash
+# Unoptimized
+find . -type f | fzf --preview 'cat {}'
+
+# Optimized
+fd --type f | fzf --scheme=path --preview 'bat --style=numbers --color=always --line-range :500 {}'
+```
+
+### Process Selector
+
+```bash
+# Unoptimized
+ps -ef | fzf --nth=8.. --preview 'ps -p {2} -f'
+
+# Optimized
+ps -ef | awk 'NR==1 || NR>1 {print $2, $8, $9, $10, $11}' | fzf --preview 'ps -p {1} -f'
+```
+
+### Git Log Browser
+
+```bash
+# Unoptimized
+git log --all --format="%H %s" | fzf --preview 'git show {1}'
+
+# Optimized
+git log --all --oneline --color=always | 
+  fzf --ansi --scheme=history --preview 'git show --color=always {1}' --preview-window 'right:60%'
+```
+
+### Interactive Ripgrep
+
+```bash
+# Unoptimized
+fzf --bind 'change:reload:rg --line-number {q}'
+
+# Optimized
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case"
+fzf --disabled --ansi \
+    --bind "start:reload:$RG_PREFIX ''" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --delimiter : \
+    --preview 'bat --color=always --line-range :500 {1} --highlight-line {2}' \
+    --preview-window '+{2}/2'
+```
+
+## Benchmarking
+
+Measure fzf performance with `time`:
+
+```bash
+# Test input generation
+time fd --type f > /tmp/files.txt
+time find . -type f > /tmp/files.txt
+
+# Test fzf with different options
+time cat /tmp/files.txt | fzf --filter "test" > /dev/null
+time cat /tmp/files.txt | fzf --filter "test" --ansi > /dev/null
+```
+
+## Performance Checklist
+
+<Steps>
+
+1. **Avoid adding performance-impacting options to `$FZF_DEFAULT_OPTS`**
+   - Don't add `--ansi` globally
+   - Don't add `--preview` globally
+   - Don't add `--nth` or `--with-nth` globally
+
+2. **Use appropriate schemes**
+   - `--scheme=path` for file paths
+   - `--scheme=history` for chronological data
+
+3. **Optimize input generation**
+   - Use fast tools like `fd` and `rg`
+   - Limit scope (don't search entire filesystem)
+   - Prefilter data before piping to fzf
+
+4. **Optimize preview commands**
+   - Limit output size (`head`, `bat --line-range`)
+   - Use fast preview tools (`bat` over `cat | pygmentize`)
+   - Consider conditional previews
+
+5. **Optimize reloads**
+   - Always debounce change events (`sleep 0.1`)
+   - Use `|| true` to prevent error messages
+   - Make reload commands as fast as possible
+
+6. **Use string delimiters over regex**
+   - `--delimiter ':'` not `--delimiter '[:\s]+'`
+
+7. **Disable fzf matching when using external filters**
+   - Use `--disabled` with ripgrep integration
+
+8. **Profile and measure**
+   - Use `time` to identify bottlenecks
+   - Test with realistic data sizes
+
+</Steps>
+
+## Performance Guidelines by Use Case
+
+### Small Datasets (< 10,000 items)
+
+- No optimization needed
+- Feel free to use `--ansi`, `--nth`, preview, etc.
+- Focus on usability over performance
+
+### Medium Datasets (10,000 - 100,000 items)
+
+- Use string delimiters
+- Limit preview output
+- Consider `--scheme=path` for files
+- Avoid `--with-nth` if possible
+
+### Large Datasets (100,000+ items)
+
+- Avoid `--ansi` unless necessary
+- Avoid `--nth` and `--with-nth`
+- Preprocess data with `awk`/`cut`
+- Use fast input generators (`fd`, `rg`)
+- Limit preview output aggressively
+- Consider splitting data into categories
+
+### Real-Time/Streaming Data
+
+- Use `--disabled` with external filtering
+- Implement debouncing (0.1-0.3s)
+- Limit buffer sizes
+- Use `follow` preview for logs
+- Reload periodically to free memory
+
+## Common Performance Pitfalls
+
+<Warning>
+**Antipattern 1**: Adding `--ansi` to `$FZF_DEFAULT_OPTS`
+
+```bash
+# DON'T DO THIS
+export FZF_DEFAULT_OPTS="--ansi --preview 'bat {}'"
+
+# DO THIS
+# Only add --ansi when needed
+alias rgf='rg --color=always | fzf --ansi'
+```
+</Warning>
+
+<Warning>
+**Antipattern 2**: Complex reload commands without debouncing
+
+```bash
+# DON'T DO THIS
+fzf --bind 'change:reload:find . -name "*{q}*"'
+
+# DO THIS
+fzf --bind 'change:reload:sleep 0.1; fd {q}'
+```
+</Warning>
+
+<Warning>
+**Antipattern 3**: Previewing entire large files
+
+```bash
+# DON'T DO THIS
+fzf --preview 'cat {}'
+
+# DO THIS
+fzf --preview 'head -100 {}'
+# or
+fzf --preview 'bat --line-range :500 {}'
+```
+</Warning>
+
+<Warning>
+**Antipattern 4**: Using slow input sources
+
+```bash
+# DON'T DO THIS
+find / -type f | fzf
+
+# DO THIS
+fd --type f | fzf
+# or limit scope
+find ~/projects -type f | fzf
+```
+</Warning>
+
+## Monitoring Performance
+
+### Check CPU Usage
+
+```bash
+# Monitor fzf process
+top -p $(pgrep fzf)
+
+# Or with htop
+htop -p $(pgrep fzf)
+```
+
+### Profile Command Execution
+
+```bash
+# Time the entire operation
+time (echo -e "item1\nitem2\nitem3" | fzf --filter "item")
+
+# Test input generation speed
+time fd --type f > /dev/null
+time find . -type f > /dev/null
+```
+
+### Check Memory Usage
+
+```bash
+# Monitor memory
+ps aux | grep fzf
+
+# Detailed memory info
+pmap $(pgrep fzf)
+```
+
+By following these optimization guidelines, you can ensure fzf performs efficiently even with large datasets and complex workflows.

@@ -1,0 +1,319 @@
+---
+title: External Programs
+description: Execute external programs from fzf using execute, execute-silent, and become actions
+---
+
+fzf allows you to execute external programs and integrate them seamlessly into your workflow using three powerful actions: `execute`, `execute-silent`, and `become`.
+
+## execute Action
+
+The `execute` action runs an external command and shows its output. fzf will pause, display the command output, and wait for you to press Enter to return.
+
+```bash
+# Press F1 to open the file with less without leaving fzf
+fzf --bind 'f1:execute(less -f {})'
+```
+
+### When to Use execute
+
+- Viewing file contents
+- Running commands that produce output you need to see
+- Interactive commands that require user input
+- Debugging or testing commands
+
+```bash
+# Git log viewer with execute binding to show full commit
+git log --oneline |
+  fzf --bind 'enter:execute(git show {1} | less)'
+```
+
+## execute-silent Action
+
+The `execute-silent` action runs a command in the background without showing output or pausing fzf. Perfect for quick operations.
+
+```bash
+# Press CTRL-Y to copy the line to clipboard
+fzf --bind 'ctrl-y:execute-silent(echo {} | pbcopy)'
+```
+
+### When to Use execute-silent
+
+- Copying to clipboard
+- Sending notifications
+- Logging or recording actions
+- Quick file operations that don't need confirmation
+
+```bash
+# File browser with background operations
+fd --type f |
+  fzf --bind 'ctrl-y:execute-silent(echo {} | pbcopy)' \
+      --bind 'ctrl-d:execute-silent(trash {})' \
+      --bind 'ctrl-o:execute-silent(xdg-open {})'
+```
+
+<Tip>
+Use `execute-silent` when you don't need to see the command output or when you want to keep fzf's interface uninterrupted.
+</Tip>
+
+## Combining with Other Actions
+
+Chain execute actions with other actions using `+`:
+
+```bash
+# Copy to clipboard and exit
+fzf --bind 'ctrl-y:execute-silent(echo {} | pbcopy)+abort'
+
+# Delete file and reload the list
+fzf --bind 'ctrl-d:execute-silent(rm {})+reload(fd --type f)'
+
+# Execute command then clear selection
+fzf --multi --bind 'ctrl-x:execute(process-files {+})+deselect-all'
+```
+
+## become Action
+
+The `become` action is fundamentally different: it **transforms fzf into a new process**. Instead of running a command and returning to fzf, fzf terminates and the new process takes its place.
+
+```bash
+fzf --bind 'enter:become(vim {})'
+```
+
+### Advantages of become
+
+Compared to command substitution like `vim "$(fzf)"`, `become` offers several benefits:
+
+<Steps>
+
+1. **No Empty Files**: Vim won't open an empty file when you press CTRL-C to cancel
+
+2. **Empty Result Handling**: Vim won't open when you press Enter on an empty result
+
+3. **Whitespace Handling**: Correctly handles multiple selections with whitespaces
+   ```bash
+   fzf --multi --bind 'enter:become(vim {+})'
+   ```
+
+4. **Multiple Handlers**: Set up different bindings for different programs
+   ```bash
+   fzf --bind 'enter:become(vim {})' \
+       --bind 'ctrl-e:become(emacs {})' \
+       --bind 'ctrl-o:become(code {})'
+   ```
+
+5. **Field Expressions**: Easily build commands using field indices
+   ```bash
+   git grep --line-number . |
+     fzf --delimiter : --nth 3.. \
+         --bind 'enter:become(vim {1} +{2})'
+   ```
+
+</Steps>
+
+## Real-World Examples
+
+### File Manager
+
+```bash
+#!/usr/bin/env bash
+
+fd --type f |
+  fzf --multi \
+      --header 'Enter: Edit | CTRL-O: Open | CTRL-D: Delete | CTRL-Y: Copy path' \
+      --bind 'enter:become(${EDITOR:-vim} {+})' \
+      --bind 'ctrl-o:execute(xdg-open {} &)' \
+      --bind 'ctrl-d:execute-silent(trash {})+reload(fd --type f)' \
+      --bind 'ctrl-y:execute-silent(echo {} | pbcopy)' \
+      --preview 'bat --color=always {}'
+```
+
+### Process Manager
+
+```bash
+#!/usr/bin/env bash
+
+ps -ef |
+  fzf --header-lines=1 \
+      --header 'CTRL-K: Kill | CTRL-R: Reload | CTRL-I: Info' \
+      --bind 'ctrl-r:reload(ps -ef)' \
+      --bind 'ctrl-k:execute-silent(kill -9 {2})+reload(ps -ef)' \
+      --bind 'ctrl-i:execute(ps -p {2} -f | less)' \
+      --preview 'ps -p {2} -f'
+```
+
+### Git Commit Browser
+
+```bash
+#!/usr/bin/env bash
+
+git log --oneline --color=always |
+  fzf --ansi \
+      --header 'Enter: Show | CTRL-O: Checkout | CTRL-R: Reset | CTRL-C: Cherry-pick' \
+      --bind 'enter:execute(git show {1} | less -R)' \
+      --bind 'ctrl-o:become(git checkout {1})' \
+      --bind 'ctrl-r:execute(git reset --hard {1})' \
+      --bind 'ctrl-c:execute-silent(git cherry-pick {1})+reload(git log --oneline --color=always)' \
+      --preview 'git show --color=always {1}'
+```
+
+### Interactive Ripgrep Launcher
+
+```bash
+#!/usr/bin/env bash
+
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q}" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --delimiter : \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})' \
+    --bind 'ctrl-o:execute(xdg-open {1})' \
+    --bind 'ctrl-y:execute-silent(echo {1}:{2} | pbcopy)'
+```
+
+### Kubernetes Pod Manager
+
+```bash
+#!/usr/bin/env bash
+
+pods() {
+  command='kubectl get pods --all-namespaces' fzf \
+    --info=inline --layout=reverse --header-lines=1 \
+    --prompt "$(kubectl config current-context | sed 's/-context$//')> " \
+    --header $'╱ Enter (exec) ╱ CTRL-O (logs in editor) ╱ CTRL-R (reload) ╱\n\n' \
+    --bind 'start,ctrl-r:reload:$command' \
+    --bind 'ctrl-/:change-preview-window(80%,border-bottom|hidden|)' \
+    --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash' \
+    --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2})' \
+    --bind 'ctrl-d:execute-silent(kubectl delete pod --namespace {1} {2})+reload:$command' \
+    --preview-window up:follow \
+    --preview 'kubectl logs --follow --all-containers --tail=10000 --namespace {1} {2}' "$@"
+}
+```
+
+## Placeholder Expressions
+
+Use these in execute/become commands:
+
+- `{}` — Current line (single-quoted)
+- `{+}` — All selected lines (for multi-select mode)
+- `{q}` — Current query string
+- `{n}` — Zero-based index of the current line
+- `{1}`, `{2}`, ... — Nth field (with `--delimiter`)
+- `{1..3}` — Range of fields
+- `{..3}` — From beginning to field 3
+- `{2..}` — From field 2 to end
+
+```bash
+# Open file at specific line from ripgrep output
+rg --line-number pattern |
+  fzf --delimiter : \
+      --bind 'enter:become(vim {1} +{2})'
+
+# Process multiple selected files
+fzf --multi \
+    --bind 'enter:become(process-files {+})'
+
+# Use query string in command
+fzf --bind 'ctrl-s:execute(save-search {q})'
+```
+
+## Advanced Patterns
+
+### Conditional Execution
+
+```bash
+# Execute different commands based on file type
+fzf --bind 'enter:transform:
+  [[ {} =~ \.pdf$ ]] &&
+    echo "become(evince {})" ||
+    echo "become(vim {})"'
+```
+
+### Multi-Step Operations
+
+```bash
+# Confirm before executing
+fzf --bind 'ctrl-d:execute(
+  read -p "Delete {}? (y/n) " -n 1 -r && [[ $REPLY =~ ^[Yy]$ ]] && rm {}
+)+reload(fd --type f)'
+```
+
+### Background Processes
+
+```bash
+# Launch programs in background
+fzf --bind 'ctrl-o:execute-silent(xdg-open {} > /dev/null 2>&1 &)'
+```
+
+### Piping Results
+
+```bash
+# Execute with piped input
+fzf --bind 'ctrl-p:execute(cat {} | prettier --stdin-filepath {} | less)'
+```
+
+## Error Handling
+
+<Warning>
+Commands in execute actions run in a shell. Make sure to handle errors appropriately:
+
+```bash
+# Add error handling
+fzf --bind 'ctrl-d:execute(
+  if rm {}; then
+    echo "Deleted successfully"
+  else
+    echo "Failed to delete" >&2
+  fi
+  read -p "Press Enter to continue"
+)'
+
+# Suppress errors for silent operations
+fzf --bind 'ctrl-o:execute-silent(xdg-open {} 2>/dev/null)'
+```
+</Warning>
+
+## Best Practices
+
+<Steps>
+
+1. **Test Commands First**: Test your commands outside fzf before adding them to bindings
+
+2. **Use Appropriate Action**: Choose between `execute`, `execute-silent`, and `become` based on your needs
+
+3. **Handle Empty Selections**: Add guards for empty results
+   ```bash
+   fzf --bind 'enter:execute([[ -n {} ]] && vim {} || echo "No selection")'
+   ```
+
+4. **Quote Properly**: Use proper quoting to handle filenames with spaces
+   ```bash
+   fzf --bind 'enter:become(vim {})' # fzf handles quoting for {}
+   ```
+
+5. **Provide Feedback**: Add headers or prompts to show available actions
+   ```bash
+   fzf --header 'Enter: Edit | CTRL-O: Open | CTRL-D: Delete'
+   ```
+
+6. **Chain Actions Thoughtfully**: Combine actions logically
+   ```bash
+   fzf --bind 'ctrl-d:execute-silent(rm {})+reload(fd)' # Delete then refresh
+   ```
+
+</Steps>
+
+## Comparison: execute vs become
+
+| Feature | execute | execute-silent | become |
+|---------|---------|----------------|--------|
+| Shows output | Yes | No | N/A |
+| Returns to fzf | Yes | Yes | No |
+| Pauses fzf | Yes | No | Terminates fzf |
+| Best for | Viewing results | Background tasks | Opening editors |
+| Can chain actions | Yes | Yes | No (fzf exits) |
+| Handles CTRL-C gracefully | No | No | Yes |
+| Example | `execute(less {})` | `execute-silent(cp {})` | `become(vim {})` |

@@ -1,0 +1,433 @@
+---
+title: Fuzzy Completion
+description: Tab completion with fuzzy matching using the ** trigger sequence
+---
+
+fzf provides fuzzy completion for Bash, Zsh, and Fish shells. This feature allows you to use fuzzy matching for command-line completion, making it faster and more flexible than traditional tab completion.
+
+## How It Works
+
+Fuzzy completion is triggered by typing the trigger sequence (default: `**`) followed by the Tab key.
+
+```bash
+# Type this
+vim **<TAB>
+
+# fzf opens with a fuzzy file selector
+# Select files and press Enter
+# They get pasted onto the command line
+vim /path/to/selected/file.txt
+```
+
+## Files and Directories
+
+Fuzzy completion works for file and directory paths with any command.
+
+### Basic Usage
+
+```bash
+# Files under the current directory
+vim **<TAB>
+
+# Files under parent directory
+vim ../**<TAB>
+
+# Files under parent directory that match 'fzf'
+vim ../fzf**<TAB>
+
+# Files under your home directory
+vim ~/**<TAB>
+```
+
+### Directory Completion
+
+```bash
+# Directories under current directory (single-selection)
+cd **<TAB>
+
+# Directories under ~/github that match 'fzf'
+cd ~/github/fzf**<TAB>
+```
+
+<Note>
+Directory completion (e.g., for `cd` command) typically allows single selection only, while file completion allows multiple selections.
+</Note>
+
+## Process IDs
+
+Fuzzy completion for PIDs is provided for the `kill` command.
+
+```bash
+# Can select multiple processes with TAB or Shift-TAB
+kill -9 **<TAB>
+```
+
+## Host Names
+
+For `ssh` and similar commands, fuzzy completion for hostnames is provided. Names are extracted from `/etc/hosts` and `~/.ssh/config`.
+
+```bash
+ssh **<TAB>
+```
+
+## Environment Variables and Aliases
+
+<Tabs>
+  <Tab title="Bash & Zsh">
+    ```bash
+    unset **<TAB>
+    export **<TAB>
+    unalias **<TAB>
+    ```
+  </Tab>
+  <Tab title="Fish">
+    ```fish
+    # Note: In Fish, use Shift-TAB instead of TAB
+    set <SHIFT-TAB>
+    ```
+  </Tab>
+</Tabs>
+
+## Customization
+
+### Change the Trigger Sequence
+
+The default trigger sequence is `**`. You can change it:
+
+```bash
+# Use ~~ as the trigger instead of **
+export FZF_COMPLETION_TRIGGER='~~'
+
+# Now use it like this:
+vim ~~<TAB>
+```
+
+### Global Completion Options
+
+Set options that apply to all completion operations:
+
+```bash
+# General options for all completions
+export FZF_COMPLETION_OPTS='--border --info=inline'
+```
+
+### Path Completion Options
+
+Customize completion for file paths:
+
+```bash
+# Options for path completion (e.g., vim **<TAB>)
+export FZF_COMPLETION_PATH_OPTS='--walker file,dir,follow,hidden'
+```
+
+### Directory Completion Options
+
+Customize completion for directories:
+
+```bash
+# Options for directory completion (e.g., cd **<TAB>)
+export FZF_COMPLETION_DIR_OPTS='--walker dir,follow'
+```
+
+## Advanced Customization (Bash & Zsh)
+
+### Custom fzf Options per Command
+
+Define a `_fzf_comprun` function to customize fzf options based on the command:
+
+```bash
+_fzf_comprun() {
+  local command=$1
+  shift
+
+  case "$command" in
+    cd)           fzf --preview 'tree -C {} | head -200'   "$@" ;;
+    export|unset) fzf --preview "eval 'echo \$'{}"
+         "$@" ;;
+    ssh)          fzf --preview 'dig {}'                   "$@" ;;
+    *)            fzf --preview 'bat -n --color=always {}' "$@" ;;
+  esac
+}
+```
+
+### Custom Source Commands
+
+Override the commands that generate completion candidates:
+
+<Steps>
+  <Step title="Define path completion generator">
+    ```bash
+    # Use fd for listing path candidates
+    _fzf_compgen_path() {
+      fd --hidden --follow --exclude ".git" . "$1"
+    }
+    ```
+  </Step>
+
+  <Step title="Define directory completion generator">
+    ```bash
+    # Use fd to generate the list for directory completion
+    _fzf_compgen_dir() {
+      fd --type d --hidden --follow --exclude ".git" . "$1"
+    }
+    ```
+  </Step>
+</Steps>
+
+### Enable for Additional Commands (Bash)
+
+On Bash, fuzzy completion is enabled only for predefined commands. Enable it for additional commands:
+
+```bash
+# Enable path completion for ag, git, and kubectl
+_fzf_setup_completion path ag git kubectl
+
+# Enable directory completion for tree
+_fzf_setup_completion dir tree
+
+# Other types: var, alias, host
+_fzf_setup_completion host ssh scp
+```
+
+### Custom Fuzzy Completion (Bash & Zsh)
+
+Create custom completion for any command by defining a `_fzf_complete_COMMAND` function:
+
+<Tabs>
+  <Tab title="Basic Example">
+    ```bash
+    # Custom fuzzy completion for "doge" command
+    #   e.g., doge **<TAB>
+    _fzf_complete_doge() {
+      _fzf_complete --multi --reverse --prompt="doge> " -- "$@" < <(
+        echo very
+        echo wow
+        echo such
+        echo doge
+      )
+    }
+
+    # Bash requires manual association
+    [ -n "$BASH" ] && complete -F _fzf_complete_doge -o default -o bashdefault doge
+    ```
+  </Tab>
+
+  <Tab title="With Post-Processing">
+    ```bash
+    # Completion with post-processing
+    _fzf_complete_foo() {
+      _fzf_complete --multi --reverse --header-lines=3 -- "$@" < <(
+        ls -al
+      )
+    }
+
+    # Extract only the filename from ls output
+    _fzf_complete_foo_post() {
+      awk '{print $NF}'
+    }
+
+    [ -n "$BASH" ] && complete -F _fzf_complete_foo -o default -o bashdefault foo
+    ```
+  </Tab>
+
+  <Tab title="Git Example">
+    ```bash
+    # Custom git branch completion
+    _fzf_complete_git() {
+      local branches
+      branches=$(git branch --all --format='%(refname:short)')
+
+      _fzf_complete --reverse --multi -- "$@" < <(
+        echo "$branches"
+      )
+    }
+
+    [ -n "$BASH" ] && complete -F _fzf_complete_git -o default -o bashdefault git
+    ```
+  </Tab>
+</Tabs>
+
+## Fish-Specific Completion
+
+Fish fuzzy completion differs from Bash and Zsh:
+
+### Key Differences
+
+<CardGroup cols={2}>
+  <Card title="No Trigger Sequence" icon="keyboard">
+    Activates on **Shift-TAB** instead of `**<TAB>`
+  </Card>
+  <Card title="Native Integration" icon="fish">
+    Uses Fish's native completion system
+  </Card>
+  <Card title="Limited Configuration" icon="gear">
+    Only `FZF_COMPLETION_OPTS` is supported
+  </Card>
+  <Card title="Hybrid Mode" icon="layer-group">
+    **TAB** preserves Fish's native completion
+  </Card>
+</CardGroup>
+
+### Custom Fish Completion
+
+Define custom completion for specific commands:
+
+<Tabs>
+  <Tab title="Basic Example">
+    ```fish
+    function _fzf_complete_foo
+      function _fzf_complete_foo_post
+        awk '{print $NF}'
+      end
+      _fzf_complete --multi --reverse --header-lines=3 -- $argv < (ls -al | psub)
+
+      functions -e _fzf_complete_foo_post
+    end
+    ```
+  </Tab>
+
+  <Tab title="Git Example">
+    ```fish
+    function _fzf_complete_git
+      switch $argv[2]
+        case checkout switch
+          _fzf_complete --reverse --no-preview -- $argv < (git branch --all --format='%(refname:short)' | psub)
+
+        case add
+          function _fzf_complete_git_post
+            awk '{print $NF}'
+          end
+          _fzf_complete --multi --reverse -- $argv < (git status --short | psub)
+
+        case show log diff
+          function _fzf_complete_git_post
+            awk '{print $1}'
+          end
+          _fzf_complete --reverse --no-sort --preview='git show --color=always {1}' -- $argv < (git log --oneline | psub)
+
+        case ''
+          __fzf_complete_native "$argv[1] " --query=(commandline -t | string escape)
+
+        case '*'
+          set -l -- current_token (commandline -t)
+          __fzf_complete_native "$argv $current_token" --query=(string escape -- $current_token) --multi
+      end
+
+      functions -e _fzf_complete_git_post
+    end
+    ```
+  </Tab>
+</Tabs>
+
+### Fish Configuration
+
+```fish
+# Set general completion options
+set -x FZF_COMPLETION_OPTS '--border --info=inline'
+```
+
+## Complete Configuration Example
+
+Here's a comprehensive configuration example:
+
+<CodeGroup>
+```bash Bash/Zsh
+# Trigger sequence
+export FZF_COMPLETION_TRIGGER='~~'
+
+# General options
+export FZF_COMPLETION_OPTS='--border --info=inline'
+
+# Path completion
+export FZF_COMPLETION_PATH_OPTS='--walker file,dir,follow,hidden'
+
+# Directory completion
+export FZF_COMPLETION_DIR_OPTS='--walker dir,follow'
+
+# Custom source commands
+_fzf_compgen_path() {
+  fd --hidden --follow --exclude ".git" . "$1"
+}
+
+_fzf_compgen_dir() {
+  fd --type d --hidden --follow --exclude ".git" . "$1"
+}
+
+# Command-specific fzf options
+_fzf_comprun() {
+  local command=$1
+  shift
+
+  case "$command" in
+    cd)           fzf --preview 'tree -C {} | head -200'   "$@" ;;
+    export|unset) fzf --preview "eval 'echo \$'{}"
+         "$@" ;;
+    ssh)          fzf --preview 'dig {}'                   "$@" ;;
+    *)            fzf --preview 'bat -n --color=always {}' "$@" ;;
+  esac
+}
+
+# Bash: Enable for additional commands
+if [ -n "$BASH" ]; then
+  _fzf_setup_completion path ag git kubectl
+  _fzf_setup_completion dir tree
+fi
+```
+
+```fish Fish
+# General completion options
+set -x FZF_COMPLETION_OPTS '--border --info=inline'
+
+# Custom git completion
+function _fzf_complete_git
+  switch $argv[2]
+    case checkout switch
+      _fzf_complete --reverse --no-preview -- $argv < (git branch --all --format='%(refname:short)' | psub)
+    case '*'
+      set -l -- current_token (commandline -t)
+      __fzf_complete_native "$argv $current_token" --query=(string escape -- $current_token) --multi
+  end
+end
+```
+</CodeGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Completion doesn't trigger">
+    - Ensure shell integration is properly set up
+    - Check that `FZF_COMPLETION_TRIGGER` matches what you're typing
+    - Verify fzf is in your PATH
+    - In Fish, make sure you're using Shift-TAB, not TAB
+  </Accordion>
+
+  <Accordion title="Custom completion not working">
+    - In Bash, ensure you've added the `complete` command
+    - Check function name matches pattern: `_fzf_complete_COMMAND`
+    - Verify the function is defined before shell completion is loaded
+    - Test the function directly
+  </Accordion>
+
+  <Accordion title="Slow completion performance">
+    - Use faster file listing tools like `fd` instead of `find`
+    - Add `--walker-skip` to exclude large directories
+    - Limit the depth of directory traversal
+    - Consider using `--max-depth` option with `fd`
+  </Accordion>
+</AccordionGroup>
+
+## Environment Variables Reference
+
+| Variable | Shells | Description |
+|----------|--------|-------------|
+| `FZF_COMPLETION_TRIGGER` | Bash, Zsh | Trigger sequence (default: `**`) |
+| `FZF_COMPLETION_OPTS` | All | General fzf options for completion |
+| `FZF_COMPLETION_PATH_OPTS` | Bash, Zsh | Options for file/path completion |
+| `FZF_COMPLETION_DIR_OPTS` | Bash, Zsh | Options for directory completion |
+
+## See Also
+
+- [Key Bindings](/shell/key-bindings) - CTRL-T, CTRL-R, ALT-C bindings
+- [Bash Configuration](/shell/bash) - Bash-specific details
+- [Zsh Configuration](/shell/zsh) - Zsh-specific details
+- [Fish Configuration](/shell/fish) - Fish-specific details

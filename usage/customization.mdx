@@ -1,0 +1,404 @@
+---
+title: Customization
+description: Customize fzf's appearance with color schemes, themes, style presets, and visual elements
+---
+
+fzf is highly customizable, allowing you to tailor its appearance to match your terminal theme and personal preferences.
+
+## Style Presets
+
+fzf provides three built-in style presets for quick setup:
+
+### Available Presets
+
+<Tabs>
+  <Tab title="default">
+    ```bash
+    fzf --style default
+    ```
+    
+    The standard fzf appearance with balanced visual elements.
+  </Tab>
+  
+  <Tab title="full">
+    ```bash
+    fzf --style full
+    ```
+    
+    Maximum visual elements including borders, labels, and separators for a feature-rich interface.
+  </Tab>
+  
+  <Tab title="minimal">
+    ```bash
+    fzf --style minimal
+    ```
+    
+    Stripped-down interface with minimal visual elements for a clean, distraction-free experience.
+  </Tab>
+</Tabs>
+
+### Style Preset Example
+
+```bash
+fzf --style full \
+    --preview 'bat --color=always {}' \
+    --bind 'focus:transform-header:file --brief {}'
+```
+
+## Color Schemes
+
+fzf supports multiple color schemes and custom color definitions.
+
+### Base Color Schemes
+
+Start with a base scheme and customize from there:
+
+```bash
+# Dark theme (default)
+fzf --color=dark
+
+# Light theme
+fzf --color=light
+
+# 16-color base theme
+fzf --color=16
+fzf --color=base16
+
+# Black and white (no color)
+fzf --color=bw
+fzf --color=no
+```
+
+### Custom Colors
+
+Customize individual UI elements using the `--color` option:
+
+#### Color Syntax
+
+```bash
+--color='[ELEMENT]:[COLOR]:[ATTRIBUTES]'
+```
+
+- **ELEMENT**: UI component to color (fg, bg, hl, border, etc.)
+- **COLOR**: Color value (name, ANSI code, or hex)
+- **ATTRIBUTES**: Text attributes (bold, dim, italic, underline, etc.)
+
+#### Color Values
+
+<CodeGroup>
+
+```bash Named Colors
+fzf --color=fg:white,bg:black,hl:red
+```
+
+```bash ANSI Codes
+fzf --color=fg:15,bg:0,hl:9
+```
+
+```bash Hex Colors
+fzf --color=fg:#ffffff,bg:#000000,hl:#ff0000
+```
+
+```bash Bright Colors
+fzf --color=fg:bright-white,bg:bright-black,hl:bright-red
+```
+
+</CodeGroup>
+
+### Color Elements Reference
+
+#### Foreground/Background
+
+| Element | Description |
+|---------|-------------|
+| `fg` | Foreground color (list items) |
+| `bg` | Background color (list section) |
+| `list-fg` | List section foreground |
+| `list-bg` | List section background |
+| `preview-fg` | Preview window foreground |
+| `preview-bg` | Preview window background |
+
+#### Current Line
+
+| Element | Description |
+|---------|-------------|
+| `fg+`, `current-fg` | Current line foreground |
+| `bg+`, `current-bg` | Current line background |
+| `hl+`, `current-hl` | Current line matched text |
+
+#### Input Section
+
+| Element | Description |
+|---------|-------------|
+| `input`, `query`, `input-fg` | Input text color |
+| `input-bg` | Input background |
+| `prompt` | Prompt text color |
+| `ghost` | Ghost text color (placeholder) |
+
+#### Borders and UI
+
+| Element | Description |
+|---------|-------------|
+| `border` | Main border color |
+| `list-border` | List section border |
+| `input-border` | Input section border |
+| `header-border` | Header section border |
+| `footer-border` | Footer section border |
+| `preview-border` | Preview window border |
+| `separator` | Horizontal separator line |
+
+#### Labels
+
+| Element | Description |
+|---------|-------------|
+| `label` | Main border label |
+| `list-label` | List section label |
+| `input-label` | Input section label |
+| `header-label` | Header section label |
+| `footer-label` | Footer section label |
+| `preview-label` | Preview window label |
+
+#### Other Elements
+
+| Element | Description |
+|---------|-------------|
+| `hl` | Highlighted matched text |
+| `selected-fg` | Selected item foreground |
+| `selected-bg` | Selected item background |
+| `selected-hl` | Selected item matched text |
+| `pointer` | Current line pointer |
+| `marker` | Multi-select marker |
+| `spinner` | Loading spinner |
+| `info` | Info line |
+| `header` | Header text |
+| `gutter` | Gutter character |
+| `scrollbar` | Scrollbar |
+
+### Text Attributes
+
+Apply text styling with attributes:
+
+| Attribute | Effect |
+|-----------|--------|
+| `regular` | Regular text (removes other attributes) |
+| `bold`, `strong` | Bold text |
+| `dim` | Dimmed text |
+| `italic` | Italic text |
+| `underline` | Underlined text |
+| `underline-double` | Double underline |
+| `underline-curly` | Curly underline |
+| `underline-dotted` | Dotted underline |
+| `underline-dashed` | Dashed underline |
+| `reverse` | Reverse video |
+| `blink` | Blinking text |
+| `strikethrough` | Strikethrough text |
+| `strip` | Strip ANSI attributes |
+
+### Color Examples
+
+<CodeGroup>
+
+```bash Dracula Theme
+fzf --color=dark \
+  --color=fg:#f8f8f2,bg:#282a36,hl:#bd93f9 \
+  --color=fg+:#f8f8f2,bg+:#44475a,hl+:#bd93f9 \
+  --color=info:#ffb86c,prompt:#50fa7b,pointer:#ff79c6 \
+  --color=marker:#ff79c6,spinner:#ffb86c,header:#6272a4
+```
+
+```bash Nord Theme
+fzf --color=dark \
+  --color=fg:#d8dee9,bg:#2e3440,hl:#88c0d0 \
+  --color=fg+:#d8dee9,bg+:#3b4252,hl+:#88c0d0 \
+  --color=info:#81a1c1,prompt:#88c0d0,pointer:#88c0d0 \
+  --color=marker:#a3be8c,spinner:#81a1c1,header:#5e81ac
+```
+
+```bash Gruvbox Theme
+fzf --color=dark \
+  --color=fg:#ebdbb2,bg:#282828,hl:#fabd2f \
+  --color=fg+:#ebdbb2,bg+:#3c3836,hl+:#fabd2f \
+  --color=info:#83a598,prompt:#b8bb26,pointer:#fe8019 \
+  --color=marker:#fe8019,spinner:#83a598,header:#928374
+```
+
+```bash Solarized Light
+fzf --color=light \
+  --color=fg:#657b83,bg:#fdf6e3,hl:#268bd2 \
+  --color=fg+:#657b83,bg+:#eee8d5,hl+:#268bd2 \
+  --color=info:#859900,prompt:#859900,pointer:#cb4b16 \
+  --color=marker:#cb4b16,spinner:#859900,header:#586e75
+```
+
+</CodeGroup>
+
+## Advanced Customization
+
+### Borders
+
+Customize border styles:
+
+```bash
+# Border styles
+fzf --border=rounded    # Rounded corners (default)
+fzf --border=sharp      # Sharp corners
+fzf --border=bold       # Bold lines
+fzf --border=double     # Double lines
+fzf --border=horizontal # Horizontal lines only
+fzf --border=vertical   # Vertical lines only
+fzf --border=none       # No border
+
+# Specific edges
+fzf --border=top
+fzf --border=bottom
+fzf --border=left
+fzf --border=right
+```
+
+### Labels
+
+Add labels to borders:
+
+```bash
+fzf --border \
+    --border-label ' File Browser ' \
+    --border-label-pos 3
+
+# Different sections can have different labels
+fzf --style=full \
+    --list-border --list-label ' Files ' \
+    --input-border --input-label ' Search ' \
+    --header-border --header-label ' Info '
+```
+
+### Padding and Margin
+
+Control spacing:
+
+```bash
+# Add padding inside borders
+fzf --border --padding 1
+
+# Different padding for each side (top,right,bottom,left)
+fzf --border --padding 1,2,1,2
+
+# Add margin outside fzf window
+fzf --border --margin 1
+fzf --border --margin 2,4,2,4
+```
+
+### Custom UI Characters
+
+Customize visual elements:
+
+```bash
+# Prompt
+fzf --prompt '❯ '
+
+# Pointer (current line indicator)
+fzf --pointer '→'
+
+# Marker (selected items)
+fzf --marker '✓'
+
+# Ellipsis (truncated text indicator)
+fzf --ellipsis '…'
+
+# Separator
+fzf --separator '═'
+
+# Scrollbar
+fzf --scrollbar '█'
+```
+
+### Complete Customization Example
+
+Here's a fully customized fzf with multiple options:
+
+```bash
+git ls-files | fzf --style full \
+    --border --padding 1,2 \
+    --border-label ' Demo ' --input-label ' Input ' --header-label ' File Type ' \
+    --preview 'bat --color=always {}' \
+    --bind 'result:transform-list-label:
+        if [[ -z $FZF_QUERY ]]; then
+          echo " $FZF_MATCH_COUNT items "
+        else
+          echo " $FZF_MATCH_COUNT matches for [$FZF_QUERY] "
+        fi
+        ' \
+    --bind 'focus:transform-preview-label:[[ -n {} ]] && printf " Previewing [%s] " {}' \
+    --bind 'focus:+transform-header:file --brief {} || echo "No file selected"' \
+    --color 'border:#aaaaaa,label:#cccccc' \
+    --color 'preview-border:#9999cc,preview-label:#ccccff' \
+    --color 'list-border:#669966,list-label:#99cc99' \
+    --color 'input-border:#996666,input-label:#ffcccc' \
+    --color 'header-border:#6699cc,header-label:#99ccff'
+```
+
+## Theme Resources
+
+<Note>
+**fzf Theme Playground**
+
+Visit [fzf Theme Playground](https://vitormv.github.io/fzf-themes/) to interactively create and preview fzf themes in your browser.
+</Note>
+
+### Saving Your Configuration
+
+Save your preferred settings in `$FZF_DEFAULT_OPTS`:
+
+```bash
+export FZF_DEFAULT_OPTS='
+  --color=dark
+  --color=fg:#d0d0d0,bg:#1c1c1c,hl:#5f87af
+  --color=fg+:#d0d0d0,bg+:#262626,hl+:#5fd7ff
+  --color=info:#afaf87,prompt:#d7005f,pointer:#af5fff
+  --color=marker:#87ff00,spinner:#af5fff,header:#87afaf
+  --border=rounded
+  --prompt="❯ "
+  --pointer="→"
+  --marker="✓"
+  --layout=reverse
+  --info=inline
+'
+```
+
+Or use a configuration file:
+
+```bash
+export FZF_DEFAULT_OPTS_FILE=~/.fzfrc
+```
+
+```bash ~/.fzfrc
+--color=dark
+--color=fg:#d0d0d0,bg:#1c1c1c,hl:#5f87af
+--border=rounded
+--layout=reverse
+--height=40%
+```
+
+## Disabling Colors
+
+If you prefer no colors:
+
+```bash
+# Disable colors completely
+fzf --no-color
+
+# Or use the bw scheme
+fzf --color=bw
+
+# Respect NO_COLOR environment variable
+export NO_COLOR=1
+```
+
+<Tip>
+Start with a base theme and iterate:
+
+1. Choose a base scheme (dark/light/16)
+2. Apply a community theme or preset
+3. Adjust specific elements to your preference
+4. Test in different terminal environments
+5. Save to your shell configuration
+</Tip>

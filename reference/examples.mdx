@@ -1,0 +1,512 @@
+---
+title: Real-World Examples
+description: Practical examples and recipes for using fzf in everyday workflows
+---
+
+This page provides practical, real-world examples of using fzf to enhance your command-line workflows.
+
+## File Operations
+
+### Interactive File Finder
+
+Open files in your editor with fuzzy search and preview:
+
+<CodeGroup>
+```bash Basic
+# Open file in vim
+vim $(fzf)
+```
+
+```bash With Preview
+# Open with preview using bat
+fzf --preview 'bat --color=always --style=numbers {}' \
+    --bind 'enter:become(vim {})'
+```
+
+```bash Advanced
+# Multi-select with preview and custom binding
+fzf --multi \
+    --preview 'bat --color=always --style=numbers {}' \
+    --preview-window 'right:60%:wrap' \
+    --bind 'ctrl-/:change-preview-window(down|hidden|)' \
+    --bind 'ctrl-y:execute-silent(echo {} | pbcopy)' \
+    --bind 'enter:become(vim {+})'
+```
+</CodeGroup>
+
+### Directory Navigator
+
+Quickly navigate to any directory:
+
+```bash
+# Find and cd to directory
+cd $(find . -type d | fzf)
+
+# With tree preview
+cd $(find . -type d | fzf \
+    --preview 'tree -C {} | head -100' \
+    --preview-window right:50%)
+
+# Using fd (faster)
+cd $(fd --type d | fzf --preview 'eza --tree --level=2 --color=always {}')
+```
+
+### File Search and Edit
+
+Search file contents and open at the matching line:
+
+```bash
+#!/usr/bin/env bash
+# Save as: fzf-edit
+
+rg --color=always --line-number --no-heading --smart-case "${*:-}" |
+  fzf --ansi \
+      --delimiter : \
+      --preview 'bat --color=always {1} --highlight-line {2}' \
+      --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+      --bind 'enter:become(vim {1} +{2})'
+```
+
+## Process Management
+
+### Interactive Process Killer
+
+Kill processes interactively:
+
+<CodeGroup>
+```bash Simple
+# Kill single process
+ps aux | fzf | awk '{print $2}' | xargs kill -9
+```
+
+```bash With Reload
+# With ability to reload process list
+(date; ps aux) |
+  fzf --bind='ctrl-r:reload(date; ps aux)' \
+      --header=$'Press CTRL-R to reload\n\n' \
+      --header-lines=2 \
+      --preview='echo {}' \
+      --preview-window=down,3,wrap \
+      --layout=reverse \
+      --height=80% |
+  awk '{print $2}' | xargs kill -9
+```
+
+```bash Multi-Select
+# Kill multiple processes
+ps aux | fzf --multi \
+    --header 'TAB to select multiple processes' \
+    --bind 'enter:become(echo {+} | awk "{{print \$2}}" | xargs kill -9)'
+```
+</CodeGroup>
+
+### Port Finder
+
+Find and kill processes by port:
+
+```bash
+# Find process using a port and kill it
+lsof -i -P -n | fzf | awk '{print $2}' | xargs kill -9
+
+# With header
+lsof -i -P -n | fzf --header-lines=1 \
+    --header 'Select process to kill' \
+    --preview 'ps -p {2} -o cmd' \
+    --bind 'enter:become(kill -9 {2})'
+```
+
+## Git Integration
+
+### Interactive Git File Selector
+
+Work with git-tracked files:
+
+```bash
+# Open modified files
+git status --short | fzf --preview 'git diff --color=always {2}' |
+  awk '{print $2}' | xargs vim
+
+# Stage files interactively
+git status --short | fzf --multi --preview 'git diff --color=always {2}' |
+  awk '{print $2}' | xargs git add
+```
+
+### Git Branch Switcher
+
+Quickly switch between branches:
+
+```bash
+# Simple branch switcher
+git branch | fzf | sed 's/^[* ]*//' | xargs git checkout
+
+# With commit preview
+git branch --all --format='%(refname:short)' |
+  fzf --preview 'git log --oneline --color=always {}' \
+      --preview-window right:70% \
+      --bind 'enter:become(git checkout {})'
+```
+
+### Git Log Browser
+
+Browse and show commits:
+
+```bash
+# Interactive git log
+git log --oneline --color=always |
+  fzf --ansi \
+      --preview 'git show --color=always {1}' \
+      --preview-window right:60% \
+      --bind 'enter:become(git show {1})'
+
+# Copy commit hash
+git log --oneline --color=always |
+  fzf --ansi \
+      --bind 'ctrl-y:execute-silent(echo {1} | pbcopy)+abort' \
+      --header 'CTRL-Y: Copy commit hash'
+```
+
+### Git Diff Viewer
+
+Interactive diff between branches:
+
+```bash
+# Compare current branch with selected branch
+git branch --format='%(refname:short)' |
+  fzf --preview 'git diff --color=always HEAD..{}' \
+      --preview-window right:70%:wrap
+```
+
+## Command History
+
+### Enhanced History Search
+
+Custom history search with better preview:
+
+```bash
+# Add to .bashrc or .zshrc
+fzf-history() {
+  eval $(history | fzf --tac --no-sort \
+    --preview 'echo {}' \
+    --preview-window down:3:wrap \
+    --bind 'ctrl-r:toggle-sort' |
+    sed 's/^[ ]*[0-9]*[ ]*//')
+}
+
+bind -x '"\C-h": fzf-history'  # bash
+# or
+bindkey '^h' fzf-history        # zsh
+```
+
+## Ripgrep Integration
+
+### Interactive Ripgrep
+
+Search code interactively with ripgrep:
+
+```bash
+#!/usr/bin/env bash
+# Save as: rg-fzf
+
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q}" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --delimiter : \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+### Dual-Mode Search
+
+Switch between ripgrep and fzf search:
+
+```bash
+#!/usr/bin/env bash
+
+rm -f /tmp/rg-fzf-{r,f}
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q}" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --bind "ctrl-f:unbind(change,ctrl-f)+change-prompt(2. fzf> )+enable-search+rebind(ctrl-r)+transform-query(echo {q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f)" \
+    --bind "ctrl-r:unbind(ctrl-r)+change-prompt(1. ripgrep> )+disable-search+reload($RG_PREFIX {q} || true)+rebind(change,ctrl-f)+transform-query(echo {q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r)" \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --prompt '1. ripgrep> ' \
+    --delimiter : \
+    --header 'CTRL-R (ripgrep) / CTRL-F (fzf)' \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+## Docker Integration
+
+### Container Manager
+
+Manage Docker containers interactively:
+
+```bash
+# Stop container
+docker ps | fzf --header-lines=1 | awk '{print $1}' | xargs docker stop
+
+# View logs
+docker ps | fzf --header-lines=1 \
+    --preview 'docker logs --tail 100 {1}' \
+    --preview-window up:60%:follow \
+    --bind 'enter:become(docker logs -f {1})'
+
+# Exec into container
+docker ps | fzf --header-lines=1 | awk '{print $1}' | xargs -I {} docker exec -it {} bash
+```
+
+### Image Manager
+
+Work with Docker images:
+
+```bash
+# Remove image
+docker images | fzf --header-lines=1 | awk '{print $3}' | xargs docker rmi
+
+# Run container from image
+docker images | fzf --header-lines=1 \
+    --preview 'docker history {3}' \
+    --bind 'enter:execute(docker run -it {3} bash)+abort'
+```
+
+## Kubernetes Integration
+
+### Pod Selector
+
+Manage Kubernetes pods:
+
+```bash
+# View pod logs
+kubectl get pods --all-namespaces |
+  fzf --info=inline --layout=reverse --header-lines=1 \
+      --prompt "$(kubectl config current-context | sed 's/-context$//')> " \
+      --header $'ENTER (kubectl exec) / CTRL-O (logs) / CTRL-R (reload)\n\n' \
+      --bind 'start:reload:kubectl get pods --all-namespaces' \
+      --bind 'ctrl-r:reload:kubectl get pods --all-namespaces' \
+      --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash' \
+      --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2})' \
+      --preview-window up:follow \
+      --preview 'kubectl logs --follow --all-containers --tail=100 --namespace {1} {2}'
+```
+
+### Context Switcher
+
+Switch Kubernetes contexts:
+
+```bash
+# Switch context
+kubectl config get-contexts | fzf --header-lines=1 |
+  awk '{print $2}' | xargs kubectl config use-context
+```
+
+## SSH Integration
+
+### SSH Host Selector
+
+Connect to hosts from SSH config:
+
+```bash
+# Parse SSH config and connect
+grep "^Host " ~/.ssh/config | awk '{print $2}' |
+  fzf --preview 'grep -A 10 "^Host {}" ~/.ssh/config' |
+  xargs -I {} ssh {}
+
+# With tmux integration
+grep "^Host " ~/.ssh/config | awk '{print $2}' |
+  fzf --tmux bottom,40% --border top \
+      --header 'Select SSH host' \
+      --bind 'enter:become(ssh {})'
+```
+
+## Database Queries
+
+### SQL Query Browser
+
+Browse and execute SQL queries:
+
+```bash
+# Browse saved queries
+find ~/queries -name '*.sql' | fzf \
+    --preview 'bat --color=always {}' \
+    --bind 'enter:execute:psql -f {}'
+```
+
+## Bookmark Manager
+
+### URL Bookmarks
+
+Manage and open bookmarks:
+
+```bash
+# Create bookmarks file: ~/.bookmarks
+# Format: description|url
+
+cat ~/.bookmarks | fzf \
+    --delimiter '|' \
+    --preview 'echo {2}' \
+    --preview-window down:1 \
+    --bind 'enter:execute:open {2}'
+```
+
+## Package Management
+
+### Interactive Package Installer
+
+Search and install packages:
+
+<CodeGroup>
+```bash apt (Debian/Ubuntu)
+# Search and install
+apt-cache search . | fzf --multi --preview 'apt-cache show {1}' |
+  awk '{print $1}' | xargs sudo apt install
+```
+
+```bash brew (macOS)
+# Search and install
+brew search | fzf --multi --preview 'brew info {}' | xargs brew install
+```
+
+```bash yay (Arch Linux)
+# Search AUR
+yay -Ss | grep -E '^[^ ]' | fzf --preview 'yay -Si {1}' |
+  awk '{print $1}' | xargs yay -S
+```
+</CodeGroup>
+
+## Text Processing
+
+### Log File Analyzer
+
+Analyze log files interactively:
+
+```bash
+# Find errors in logs
+cat /var/log/app.log | fzf \
+    --query 'ERROR' \
+    --preview 'echo {}' \
+    --preview-window down:3:wrap \
+    --bind 'ctrl-a:select-all' \
+    --bind 'ctrl-c:execute-silent(echo {+} | pbcopy)'
+```
+
+### CSV Viewer
+
+Browse CSV files:
+
+```bash
+# View CSV with column preview
+cat data.csv | fzf \
+    --header-lines=1 \
+    --preview 'echo {}' \
+    --preview-window down:3:wrap \
+    --delimiter ',' \
+    --bind 'ctrl-/:change-preview-window(down|hidden)'
+```
+
+## Environment Management
+
+### Environment Variable Viewer
+
+Browse and copy environment variables:
+
+```bash
+env | fzf \
+    --delimiter '=' \
+    --preview 'echo {2}' \
+    --preview-window down:3:wrap \
+    --bind 'ctrl-y:execute-silent(echo {2} | pbcopy)+abort' \
+    --header 'CTRL-Y: Copy value'
+```
+
+## Shell Functions
+
+Useful shell functions that combine fzf with common tasks:
+
+### Change Directory to Recent
+
+```bash
+# Add to .bashrc or .zshrc
+cd-recent() {
+  local dir
+  dir=$(dirs -v | fzf --height 40% --reverse | awk '{print $2}')
+  [ -n "$dir" ] && cd "$dir"
+}
+
+alias cdr='cd-recent'
+```
+
+### Find and Replace
+
+```bash
+# Interactive find and replace
+fzf-replace() {
+  local file
+  file=$(rg -l "$1" | fzf --preview "rg --color=always '$1' {}")
+  [ -n "$file" ] && vim "+/$1" "$file"
+}
+```
+
+### Project Switcher
+
+```bash
+# Switch between project directories
+project() {
+  local project_dir
+  project_dir=$(fd --type d --max-depth 2 . ~/projects | fzf \
+    --preview 'eza --tree --level=2 --color=always {}' \
+    --preview-window right:60%)
+  [ -n "$project_dir" ] && cd "$project_dir"
+}
+```
+
+### Command Palette
+
+Create a custom command palette:
+
+```bash
+# Create ~/.commands file with format: description | command
+# Example:
+# Open vim config | vim ~/.vimrc
+# Update system | sudo apt update && sudo apt upgrade
+
+commands() {
+  local cmd
+  cmd=$(cat ~/.commands | fzf --delimiter '|' --preview 'echo {2}' --with-nth 1 | awk -F'|' '{print $2}')
+  [ -n "$cmd" ] && eval "$cmd"
+}
+```
+
+## Tips and Best Practices
+
+<Tip>
+**Use `become` instead of command substitution**: `fzf --bind 'enter:become(vim {})'` is more robust than `vim $(fzf)` as it handles empty results and special characters better.
+</Tip>
+
+<Tip>
+**Debounce rapid changes**: When using `reload` with `change` event, add a small delay: `change:reload:sleep 0.1; command {q}`
+</Tip>
+
+<Tip>
+**Preview with offset**: Use `+{N}+OFFSET/DENOM` to scroll preview to relevant line: `--preview-window '+{2}+3/3'`
+</Tip>
+
+<Tip>
+**Multi-select with `{+}`**: Use `{+}` placeholder to get all selected items: `--bind 'enter:become(vim {+})'`
+</Tip>
+
+<Warning>
+Always quote file paths and handle special characters properly when using `xargs` or command substitution. Consider using `--print0` with `xargs -0` for safer handling.
+</Warning>
+
+<Tip>
+**Context-specific options**: Use different fzf options for different use cases rather than putting everything in `FZF_DEFAULT_OPTS`.
+</Tip>

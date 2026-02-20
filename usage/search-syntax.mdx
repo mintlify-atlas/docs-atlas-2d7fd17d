@@ -1,0 +1,259 @@
+---
+title: Search Syntax
+description: Master fzf's powerful search syntax with fuzzy matching, exact matches, prefix/suffix searches, and OR operators
+---
+
+fzf uses an "extended-search mode" by default, allowing you to type multiple search terms with various matching strategies.
+
+## Search Modes
+
+### Extended Search Mode (Default)
+
+By default, fzf uses extended search where you can combine multiple terms:
+
+```bash
+# Multiple terms (all must match)
+^music .mp3$ sbtrkt !fire
+```
+
+### Exact Match Mode
+
+Disable fuzzy matching with `-e` or `--exact`:
+
+```bash
+fzf --exact
+```
+
+In exact mode, the `'` prefix "unquotes" the term to enable fuzzy matching for that term.
+
+## Search Operators
+
+### Fuzzy Match
+
+| Token | Match Type | Description | Example |
+|-------|------------|-------------|----------|
+| `sbtrkt` | fuzzy-match | Items that fuzzy match `sbtrkt` | Matches "subtrakt", "sb_tr_kt" |
+
+```bash
+find * | fzf
+# Type: sbtrkt
+# Matches: subtrakt, sibertrakt, sb_track_kit
+```
+
+### Exact Match (Quoted)
+
+| Token | Match Type | Description | Example |
+|-------|------------|-------------|----------|
+| `'wild` | exact-match (quoted) | Items that include `wild` | Matches "wilderness", "wild_animal" |
+| `'wild'` | exact-boundary-match | Items that include `wild` at word boundaries | Matches "wild animal" but not "wilderness" |
+
+<CodeGroup>
+
+```bash Exact Match
+ls | fzf
+# Type: 'config
+# Matches only items containing the exact string "config"
+```
+
+```bash Boundary Match
+ls | fzf
+# Type: 'test'
+# Matches: "test.txt", "run test"
+# Doesn't match: "testing.txt", "contest.txt"
+```
+
+</CodeGroup>
+
+### Prefix Match
+
+| Token | Match Type | Description | Example |
+|-------|------------|-------------|----------|
+| `^music` | prefix-exact-match | Items that start with `music` | Matches "music.mp3", "music_file" |
+
+```bash
+find * | fzf
+# Type: ^README
+# Matches: README.md, README.txt
+# Doesn't match: docs/README.md
+```
+
+### Suffix Match
+
+| Token | Match Type | Description | Example |
+|-------|------------|-------------|----------|
+| `.mp3$` | suffix-exact-match | Items that end with `.mp3` | Matches "song.mp3", "audio.mp3" |
+
+```bash
+find * | fzf
+# Type: .md$
+# Matches files ending with .md
+```
+
+### Inverse Match
+
+Exclude items with the `!` prefix:
+
+| Token | Match Type | Description |
+|-------|------------|-------------|
+| `!fire` | inverse-exact-match | Items that do not include `fire` |
+| `!^music` | inverse-prefix-exact-match | Items that do not start with `music` |
+| `!.mp3$` | inverse-suffix-exact-match | Items that do not end with `.mp3` |
+
+<CodeGroup>
+
+```bash Exclude Pattern
+find * | fzf
+# Type: !test
+# Shows all items except those containing "test"
+```
+
+```bash Exclude Prefix
+find * | fzf
+# Type: !^.
+# Excludes hidden files (starting with dot)
+```
+
+```bash Exclude Suffix
+find * | fzf
+# Type: !.log$
+# Excludes all .log files
+```
+
+</CodeGroup>
+
+## Combining Search Terms
+
+### AND Logic (Spaces)
+
+Multiple terms separated by spaces must all match:
+
+```bash
+find * | fzf
+# Type: music mp3 jazz
+# Only shows items matching all three terms
+```
+
+### OR Logic (Pipe)
+
+Use `|` as an OR operator:
+
+```bash
+find * | fzf
+# Type: ^core go$ | rb$ | py$
+# Matches files starting with "core" and ending with .go, .rb, or .py
+```
+
+<Note>
+The entire query is treated as one expression. The OR operator `|` can be used to create alternative matches.
+</Note>
+
+## Practical Examples
+
+<CodeGroup>
+
+```bash Audio Files
+# Find MP3 or FLAC files with "jazz" in the name
+find * | fzf
+# Type: jazz .mp3$ | .flac$
+```
+
+```bash Source Code
+# Find JavaScript or TypeScript files, excluding tests
+find * | fzf
+# Type: .js$ | .ts$ !test !spec
+```
+
+```bash Configuration Files
+# Find config files starting with a dot
+find * | fzf
+# Type: ^. config | settings
+```
+
+```bash Documentation
+# Find markdown files in docs folder, excluding README
+find * | fzf
+# Type: ^docs/ .md$ !README
+```
+
+```bash Git Branches
+# Find feature or bugfix branches
+git branch | fzf
+# Type: ^feature/ | ^bugfix/
+```
+
+```bash Log Files
+# Find error logs from today, excluding debug
+ls -lt logs/ | fzf
+# Type: error !debug ^2026
+```
+
+</CodeGroup>
+
+## Advanced Search Techniques
+
+### Case Sensitivity
+
+fzf uses smart case matching by default:
+- Lowercase query: case-insensitive
+- Uppercase query: case-sensitive
+
+Override with options:
+
+```bash
+# Force case-insensitive
+fzf -i
+
+# Force case-sensitive
+fzf +i
+```
+
+### Field-Limited Search
+
+Limit search to specific fields with `-n` or `--nth`:
+
+```bash
+# Only search the 3rd field onwards
+ls -l | fzf --nth=3..
+
+# Search only the 2nd field
+ps -ef | fzf --nth=2
+
+# Search fields 2 and 4
+ps -ef | fzf --nth=2,4
+```
+
+### Custom Delimiter
+
+Change field delimiter with `-d` or `--delimiter`:
+
+```bash
+# Use colon as delimiter
+cat /etc/passwd | fzf -d: --nth=1,5
+
+# Use tab as delimiter
+fzf -d'\t' --nth=2
+```
+
+## Search Syntax Quick Reference
+
+| Syntax | Type | Description |
+|--------|------|-------------|
+| `token` | Fuzzy | Fuzzy match |
+| `'token` | Exact | Exact match (substring) |
+| `'token'` | Exact boundary | Exact match at word boundaries |
+| `^token` | Prefix | Starts with |
+| `token$` | Suffix | Ends with |
+| `!token` | Inverse | Does not include |
+| `!^token` | Inverse prefix | Does not start with |
+| `!token$` | Inverse suffix | Does not end with |
+| `a \| b` | OR | Match a OR b |
+| `a b` | AND | Match both a AND b |
+
+<Tip>
+Combine multiple operators for powerful queries:
+```bash
+# Find Go or Rust source files in src/, excluding tests
+find * | fzf
+# Type: ^src/ .go$ | .rs$ !test
+```
+</Tip>

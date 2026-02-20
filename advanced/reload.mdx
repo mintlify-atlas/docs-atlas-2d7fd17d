@@ -1,0 +1,327 @@
+---
+title: Dynamic Reloading
+description: Learn how to dynamically reload fzf's candidate list using the reload action for interactive data exploration
+---
+
+The `reload` action is one of fzf's most powerful features, allowing you to dynamically update the candidate list without restarting fzf. This enables highly interactive workflows where the list adapts to your actions.
+
+## Basic Reload
+
+The `reload` action executes a command and updates the candidate list with its output:
+
+```bash
+ps -ef |
+  fzf --bind 'ctrl-r:reload(ps -ef)' \
+      --header 'Press CTRL-R to reload' --header-lines=1 \
+      --height=50% --layout=reverse
+```
+
+Press CTRL-R to refresh the process list without restarting fzf.
+
+## Toggling Between Data Sources
+
+Set up multiple bindings to switch between different data sources:
+
+```bash
+find * | fzf --prompt 'All> ' \
+             --header 'CTRL-D: Directories / CTRL-F: Files' \
+             --bind 'ctrl-d:change-prompt(Directories> )+reload(find * -type d)' \
+             --bind 'ctrl-f:change-prompt(Files> )+reload(find * -type f)'
+```
+
+<Tip>
+Use `change-prompt` along with `reload` to give visual feedback about the current mode.
+</Tip>
+
+## Single-Key Toggle
+
+Use the `transform` action to toggle between modes with a single key:
+
+```bash
+fd --type file |
+  fzf --prompt 'Files> ' \
+      --header 'CTRL-T: Switch between Files/Directories' \
+      --bind 'ctrl-t:transform:[[ ! $FZF_PROMPT =~ Files ]] &&
+              echo "change-prompt(Files> )+reload(fd --type file)" ||
+              echo "change-prompt(Directories> )+reload(fd --type directory)"' \
+      --preview '[[ $FZF_PROMPT =~ Files ]] && bat --color=always {} || tree -C {}'
+```
+
+### How It Works
+
+<Steps>
+
+1. **Store State in Prompt**: The current mode is stored in the prompt string
+2. **Check State**: Use `$FZF_PROMPT` to determine which mode we're in
+3. **Conditional Action**: Execute different actions based on the state
+4. **Dynamic Preview**: Adjust preview command based on the mode
+
+</Steps>
+
+## Reload on Events
+
+### start Event
+
+Trigger reload when fzf starts:
+
+```bash
+fzf --bind "start:reload:ps -ef"
+```
+
+### change Event
+
+Reload on every query change:
+
+```bash
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+fzf --disabled --ansi \
+    --bind "start:reload:$RG_PREFIX ''" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true"
+```
+
+<Warning>
+When binding reload to the `change` event, add a small delay (e.g., `sleep 0.1`) for debouncing. This reduces the number of intermediate processes while typing.
+</Warning>
+
+## Advanced Reload Patterns
+
+### Incremental Filtering
+
+Combine initial command output with reload:
+
+```bash
+(date; ps -ef) |
+  fzf --bind='ctrl-r:reload(date; ps -ef)' \
+      --header=$'Press CTRL-R to reload\n\n' --header-lines=2 \
+      --preview='echo {}' --preview-window=down,3,wrap \
+      --layout=reverse --height=80%
+```
+
+### Conditional Reload
+
+Reload based on current state:
+
+```bash
+fzf --bind 'ctrl-r:transform:
+  [[ $FZF_MATCH_COUNT -eq 0 ]] &&
+    echo "reload(find . -type f)" ||
+    echo "reload(fd --type f)"'
+```
+
+### Chained Reloads
+
+Combine reload with other actions:
+
+```bash
+fzf --bind 'ctrl-r:clear-query+first+reload(ps -ef)'
+```
+
+This binding:
+1. Clears the query string
+2. Moves to the first item
+3. Reloads the list
+
+## Interactive Ripgrep Integration
+
+One of the most popular uses of reload is creating an interactive Ripgrep launcher:
+
+```bash
+#!/usr/bin/env bash
+
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q} || true" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --delimiter : \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+### Key Features
+
+- `--disabled`: Disables fzf's fuzzy matching since Ripgrep does the filtering
+- `{q}`: Placeholder for the current query string
+- `|| true`: Ensures the command exits with 0 even when no matches found
+- `sleep 0.1`: Debouncing to reduce intermediate processes
+
+## Switching Between Search Modes
+
+### Two-Phase Filtering
+
+Switch between Ripgrep mode and fzf mode:
+
+```bash
+#!/usr/bin/env bash
+
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q}" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --bind "alt-enter:unbind(change,alt-enter)+change-prompt(2. fzf> )+enable-search+clear-query" \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --prompt '1. ripgrep> ' \
+    --delimiter : \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+**Phase 1**: Ripgrep does the heavy lifting, searching through files  
+**Phase 2**: After pressing Alt-Enter, switch to fzf-only fuzzy filtering on the results
+
+### Bidirectional Switching
+
+Allow switching back and forth between modes:
+
+```bash
+#!/usr/bin/env bash
+
+rm -f /tmp/rg-fzf-{r,f}
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload($RG_PREFIX {q})+unbind(ctrl-r)" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --bind "ctrl-f:unbind(change,ctrl-f)+change-prompt(2. fzf> )+enable-search+rebind(ctrl-r)+transform-query(echo {q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f)" \
+    --bind "ctrl-r:unbind(ctrl-r)+change-prompt(1. ripgrep> )+disable-search+reload($RG_PREFIX {q} || true)+rebind(change,ctrl-f)+transform-query(echo {q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r)" \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --prompt '1. ripgrep> ' \
+    --delimiter : \
+    --header '╱ CTRL-R (ripgrep mode) ╱ CTRL-F (fzf mode) ╱' \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+<Tip>
+The query string is preserved when switching modes by storing it in temporary files (`/tmp/rg-fzf-{r,f}`) using `transform-query`.
+</Tip>
+
+### Single-Key Mode Toggle
+
+Simplified version using one key to toggle:
+
+```bash
+#!/usr/bin/env bash
+
+rm -f /tmp/rg-fzf-{r,f}
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q}" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --bind 'ctrl-t:transform:[[ ! $FZF_PROMPT =~ ripgrep ]] &&
+      echo "rebind(change)+change-prompt(1. ripgrep> )+disable-search+transform-query:echo \{q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r" ||
+      echo "unbind(change)+change-prompt(2. fzf> )+enable-search+transform-query:echo \{q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f"' \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --prompt '1. ripgrep> ' \
+    --delimiter : \
+    --header 'CTRL-T: Switch between ripgrep/fzf' \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+<Warning>
+When using `transform`, escape the placeholder (`\{q}`) to prevent immediate evaluation.
+</Warning>
+
+## Simultaneous Control
+
+Control both Ripgrep and fzf search independently:
+
+```bash
+#!/usr/bin/env bash
+
+export TEMP=$(mktemp -u)
+trap 'rm -f "$TEMP"' EXIT
+
+INITIAL_QUERY="${*:-}"
+TRANSFORMER='
+  rg_pat={q:1}      # The first word is passed to ripgrep
+  fzf_pat={q:2..}   # The rest are passed to fzf
+
+  if ! [[ -r "$TEMP" ]] || [[ $rg_pat != $(cat "$TEMP") ]]; then
+    echo "$rg_pat" > "$TEMP"
+    printf "reload:sleep 0.1; rg --column --line-number --no-heading --color=always --smart-case %q || true" "$rg_pat"
+  fi
+  echo "+search:$fzf_pat"
+'
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --with-shell 'bash -c' \
+    --bind "start,change:transform:$TRANSFORMER" \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --delimiter : \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-line,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+The first word of your query searches with Ripgrep, while the remaining words filter with fzf.
+
+## Reload Best Practices
+
+<Steps>
+
+1. **Handle Errors Gracefully**: Use `|| true` to prevent error messages when commands fail
+   ```bash
+   --bind "reload:$RG_PREFIX {q} || true"
+   ```
+
+2. **Add Debouncing**: Include small delays for change events
+   ```bash
+   --bind "change:reload:sleep 0.1; command"
+   ```
+
+3. **Preserve Context**: Save and restore query strings when switching modes
+   ```bash
+   --bind 'ctrl-r:transform-query:echo {q} > /tmp/state; cat /tmp/restore'
+   ```
+
+4. **Show Visual Feedback**: Update prompts and headers when reloading
+   ```bash
+   --bind 'ctrl-r:change-prompt(Loading...> )+reload(command)+change-prompt(Ready> )'
+   ```
+
+5. **Clear State When Needed**: Reset query and position if appropriate
+   ```bash
+   --bind 'ctrl-r:clear-query+first+reload(command)'
+   ```
+
+</Steps>
+
+## Common Reload Patterns
+
+### Refresh Data
+
+```bash
+fzf --bind 'ctrl-r:reload(get-data-command)'
+```
+
+### Filter by Type
+
+```bash
+fzf --bind 'ctrl-f:reload(find . -type f)' \
+    --bind 'ctrl-d:reload(find . -type d)'
+```
+
+### Search Mode Toggle
+
+```bash
+fzf --bind 'ctrl-t:transform:toggle-search-mode'
+```
+
+### Incremental Search
+
+```bash
+fzf --disabled --bind 'change:reload:search-command {q}'
+```
+
+### Conditional Reload
+
+```bash
+fzf --bind 'ctrl-r:transform:[[ condition ]] && echo reload:command1 || echo reload:command2'
+```

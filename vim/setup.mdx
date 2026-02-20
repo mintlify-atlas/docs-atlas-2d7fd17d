@@ -1,0 +1,126 @@
+---
+title: Installing fzf in Vim/Neovim
+description: Set up fzf as a Vim or Neovim plugin for fuzzy finding inside your editor
+---
+
+fzf can be integrated into Vim and Neovim as a plugin, enabling fuzzy finding capabilities directly within your editor.
+
+## Installation Methods
+
+<Steps>
+
+### Choose Your Installation Method
+
+There are several ways to install fzf in Vim/Neovim depending on your setup.
+
+### Using vim-plug (Recommended)
+
+If you use [vim-plug](https://github.com/junegunn/vim-plug), add the following to your Vim configuration file:
+
+<CodeGroup>
+
+```vim Using Local Installation
+" If installed using Homebrew
+Plug '/usr/local/opt/fzf'
+
+" If installed using Homebrew on Apple Silicon
+Plug '/opt/homebrew/opt/fzf'
+
+" If you have cloned fzf on ~/.fzf directory
+Plug '~/.fzf'
+```
+
+```vim Using GitHub (Recommended)
+" Get the latest Vim plugin file from GitHub
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+```
+
+```vim With fzf.vim Commands
+" Install both fzf and fzf.vim for additional commands
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
+```
+
+</CodeGroup>
+
+<Note>
+The `fzf#install()` function ensures you have the latest fzf binary. If fzf is not found on `$PATH`, it will prompt to download it for you.
+</Note>
+
+### Manual Installation
+
+If you don't use a plugin manager, add fzf to your `&runtimepath` manually:
+
+<CodeGroup>
+
+```vim Homebrew Intel Mac
+" Add this to your .vimrc or init.vim
+set rtp+=/usr/local/opt/fzf
+```
+
+```vim Homebrew Apple Silicon
+set rtp+=/opt/homebrew/opt/fzf
+```
+
+```vim Git Clone
+" If you cloned fzf to ~/.fzf
+set rtp+=~/.fzf
+```
+
+</CodeGroup>
+
+</Steps>
+
+## Additional Plugin: fzf.vim
+
+While the basic fzf plugin provides core functionality, you may want to install [fzf.vim](https://github.com/junegunn/fzf.vim) as a separate plugin for additional useful commands:
+
+```vim
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
+```
+
+The `fzf.vim` plugin provides commands like:
+
+- `:Files` - Search files
+- `:Buffers` - Search open buffers
+- `:Rg` - Search with ripgrep
+- `:Lines` - Search lines in loaded buffers
+- And many more
+
+<Tip>
+The `fzf.vim` project is maintained separately and offers a rich set of pre-built commands for common tasks.
+</Tip>
+
+## Neovim: Consider fzf-lua
+
+If you use Neovim and prefer Lua-based plugins, check out [fzf-lua](https://github.com/ibhagwan/fzf-lua):
+
+```lua
+-- Using lazy.nvim
+{
+  'ibhagwan/fzf-lua',
+  dependencies = { 'nvim-tree/nvim-web-devicons' },
+  config = function()
+    require('fzf-lua').setup({})
+  end
+}
+```
+
+<Note>
+fzf-lua is a pure Lua implementation designed specifically for Neovim, offering better performance and deeper integration with Neovim's Lua API.
+</Note>
+
+## Verify Installation
+
+After installation, verify fzf is working by running:
+
+```vim
+:FZF
+```
+
+This should open the fzf file finder in your current directory.
+
+## Next Steps
+
+Once installed, learn how to use fzf in Vim with commands and functions in the [Usage guide](/vim/usage).

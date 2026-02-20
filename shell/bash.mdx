@@ -1,0 +1,381 @@
+---
+title: Bash Shell Integration
+description: Setup and customize fzf for Bash shell with key bindings and fuzzy completion
+---
+
+This guide covers Bash-specific setup and customization for fzf shell integration.
+
+## Quick Setup
+
+Add the following line to your `~/.bashrc`:
+
+```bash ~/.bashrc
+# Set up fzf key bindings and fuzzy completion
+eval "$(fzf --bash)"
+```
+
+Then reload your shell configuration:
+
+```bash
+source ~/.bashrc
+```
+
+<Note>
+The `--bash` option requires fzf 0.48.0 or later. For older versions, see [Manual Setup](#manual-setup) below.
+</Note>
+
+## What Gets Enabled
+
+Running `eval "$(fzf --bash)"` enables:
+
+<CardGroup cols={2}>
+  <Card title="Key Bindings" icon="keyboard">
+    - **CTRL-T**: Paste files/directories
+    - **CTRL-R**: Search command history
+    - **ALT-C**: Navigate to directory
+  </Card>
+  <Card title="Fuzzy Completion" icon="terminal">
+    - `**<TAB>` trigger for fuzzy completion
+    - Works with files, directories, PIDs, hosts
+    - Customizable per command
+  </Card>
+</CardGroup>
+
+## Manual Setup (for fzf < 0.48.0)
+
+If you have an older version of fzf, source the shell scripts directly:
+
+```bash ~/.bashrc
+# Key bindings
+source /usr/share/doc/fzf/examples/key-bindings.bash
+
+# Fuzzy completion
+source /usr/share/doc/fzf/examples/completion.bash
+```
+
+<Note>
+The location of these files varies by installation method. Common paths:
+- **Debian/Ubuntu**: `/usr/share/doc/fzf/examples/`
+- **Arch Linux**: `/usr/share/fzf/`
+- **Homebrew**: `/opt/homebrew/opt/fzf/shell/` (Apple Silicon) or `/usr/local/opt/fzf/shell/` (Intel)
+- **Git install**: `~/.fzf/shell/`
+
+Use `apt show fzf` or similar to find the correct location.
+</Note>
+
+## Configuration
+
+### Key Bindings
+
+Customize key binding behavior with environment variables:
+
+```bash ~/.bashrc
+# Preview file content using bat
+export FZF_CTRL_T_OPTS="
+  --walker-skip .git,node_modules,target
+  --preview 'bat -n --color=always {}'
+  --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+
+# CTRL-Y to copy the command into clipboard using pbcopy
+export FZF_CTRL_R_OPTS="
+  --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+  --color header:italic
+  --header 'Press CTRL-Y to copy command into clipboard'"
+
+# Print tree structure in the preview window
+export FZF_ALT_C_OPTS="
+  --walker-skip .git,node_modules,target
+  --preview 'tree -C {}'"
+
+# Set up fzf key bindings and fuzzy completion
+eval "$(fzf --bash)"
+```
+
+<Warning>
+Environment variables must be set **before** the `eval "$(fzf --bash)"` line.
+</Warning>
+
+### Fuzzy Completion
+
+Customize fuzzy completion behavior:
+
+```bash ~/.bashrc
+# Change trigger sequence from ** to ~~
+export FZF_COMPLETION_TRIGGER='~~'
+
+# General completion options
+export FZF_COMPLETION_OPTS='--border --info=inline'
+
+# Path completion options (e.g., vim **<TAB>)
+export FZF_COMPLETION_PATH_OPTS='--walker file,dir,follow,hidden'
+
+# Directory completion options (e.g., cd **<TAB>)
+export FZF_COMPLETION_DIR_OPTS='--walker dir,follow'
+
+eval "$(fzf --bash)"
+```
+
+## Advanced Customization
+
+### Custom Source Commands
+
+Override the default file traversal commands:
+
+```bash ~/.bashrc
+# Use fd for CTRL-T
+export FZF_CTRL_T_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
+
+# Use fd for ALT-C
+export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+
+# Use fd for completion
+_fzf_compgen_path() {
+  fd --hidden --follow --exclude ".git" . "$1"
+}
+
+_fzf_compgen_dir() {
+  fd --type d --hidden --follow --exclude ".git" . "$1"
+}
+
+eval "$(fzf --bash)"
+```
+
+### Command-Specific Completion
+
+Customize fzf options based on the command being completed:
+
+```bash ~/.bashrc
+eval "$(fzf --bash)"
+
+# Must be defined AFTER fzf initialization
+_fzf_comprun() {
+  local command=$1
+  shift
+
+  case "$command" in
+    cd)           fzf --preview 'tree -C {} | head -200'   "$@" ;;
+    export|unset) fzf --preview "eval 'echo \$'{}"
+         "$@" ;;
+    ssh)          fzf --preview 'dig {}'                   "$@" ;;
+    *)            fzf --preview 'bat -n --color=always {}' "$@" ;;
+  esac
+}
+```
+
+### Enable Completion for Additional Commands
+
+Bash only enables fuzzy completion for a predefined set of commands. Add more:
+
+```bash ~/.bashrc
+eval "$(fzf --bash)"
+
+# Enable path completion for additional commands
+_fzf_setup_completion path ag git kubectl vim nvim
+
+# Enable directory completion
+_fzf_setup_completion dir tree
+
+# Enable other completion types
+_fzf_setup_completion host ssh scp sftp
+_fzf_setup_completion var unset
+_fzf_setup_completion alias unalias
+```
+
+### Custom Command Completion
+
+Create custom fuzzy completion for your own commands:
+
+```bash ~/.bashrc
+eval "$(fzf --bash)"
+
+# Custom completion for 'myapp'
+_fzf_complete_myapp() {
+  _fzf_complete --multi --reverse --prompt="myapp> " -- "$@" < <(
+    myapp --list-all
+  )
+}
+
+# With post-processing
+_fzf_complete_myapp_post() {
+  awk '{print $1}'
+}
+
+# Register the completion
+complete -F _fzf_complete_myapp -o default -o bashdefault myapp
+```
+
+## Bash Version Compatibility
+
+fzf works with Bash 3.0+, but some features require Bash 4.0+:
+
+### Bash 3.x
+
+- Basic key bindings work
+- Uses readline command string binding (more complex)
+- Older macOS systems (pre-Catalina) ship with Bash 3.2
+
+### Bash 4.x+
+
+- Full feature support
+- Uses `-x` flag for cleaner key binding implementation
+- Better performance and reliability
+
+<Note>
+If you're on macOS with Bash 3.2, consider installing Bash 4+ via Homebrew:
+```bash
+brew install bash
+```
+Then add `/opt/homebrew/bin/bash` to `/etc/shells` and change your default shell.
+</Note>
+
+## Disabling Features
+
+Disable specific key bindings by setting their `*_COMMAND` variable to empty:
+
+```bash ~/.bashrc
+# Disable CTRL-R and ALT-C, keep only CTRL-T
+FZF_CTRL_R_COMMAND= FZF_ALT_C_COMMAND= eval "$(fzf --bash)"
+```
+
+## Complete Configuration Example
+
+Here's a comprehensive `~/.bashrc` configuration:
+
+```bash ~/.bashrc
+# ============================================================================
+# fzf Configuration
+# ============================================================================
+
+# General fzf options
+export FZF_DEFAULT_OPTS="
+  --height 40%
+  --layout reverse
+  --border
+  --inline-info
+  --color 'fg:#bbccdd,fg+:#ddeeff,bg:#334455,preview-bg:#223344,border:#778899'"
+
+# Use fd instead of find
+export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
+
+# CTRL-T configuration
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_CTRL_T_OPTS="
+  --walker-skip .git,node_modules,target,dist,build
+  --preview 'bat -n --color=always --line-range :500 {}'
+  --bind 'ctrl-/:change-preview-window(down|hidden|)'
+  --bind 'ctrl-y:execute-silent(echo -n {} | pbcopy)'
+  --header 'CTRL-/: toggle preview | CTRL-Y: copy path'"
+
+# CTRL-R configuration
+export FZF_CTRL_R_OPTS="
+  --preview 'echo {}'
+  --preview-window up:3:hidden:wrap
+  --bind 'ctrl-/:toggle-preview'
+  --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+  --color header:italic
+  --header 'Press CTRL-Y to copy command | CTRL-/: toggle preview'"
+
+# ALT-C configuration
+export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+export FZF_ALT_C_OPTS="
+  --preview 'tree -C {} | head -200'
+  --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+
+# Completion configuration
+export FZF_COMPLETION_TRIGGER='**'
+export FZF_COMPLETION_OPTS='--border --info=inline'
+export FZF_COMPLETION_PATH_OPTS="
+  --walker file,dir,follow,hidden
+  --walker-skip .git,node_modules"
+export FZF_COMPLETION_DIR_OPTS='--walker dir,follow,hidden'
+
+# Initialize fzf
+eval "$(fzf --bash)"
+
+# Custom completion source commands
+_fzf_compgen_path() {
+  fd --hidden --follow --exclude ".git" . "$1"
+}
+
+_fzf_compgen_dir() {
+  fd --type d --hidden --follow --exclude ".git" . "$1"
+}
+
+# Command-specific fzf options
+_fzf_comprun() {
+  local command=$1
+  shift
+
+  case "$command" in
+    cd)           fzf --preview 'tree -C {} | head -200' "$@" ;;
+    export|unset) fzf --preview "eval 'echo \$'{}" "$@" ;;
+    ssh)          fzf --preview 'dig {}' "$@" ;;
+    vim|nvim)     fzf --preview 'bat -n --color=always {}' "$@" ;;
+    *)            fzf "$@" ;;
+  esac
+}
+
+# Enable completion for additional commands
+_fzf_setup_completion path ag rg git kubectl
+_fzf_setup_completion dir tree
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Key bindings not working">
+    1. Verify fzf is in your PATH: `which fzf`
+    2. Check if the script is sourced: `type __fzf_select__`
+    3. Ensure you've reloaded your shell: `source ~/.bashrc`
+    4. Check for conflicts with other key binding tools
+  </Accordion>
+
+  <Accordion title="Completion not triggering">
+    1. Verify completion is loaded: `complete -p | grep fzf`
+    2. Check the trigger sequence: `echo $FZF_COMPLETION_TRIGGER`
+    3. Ensure you're typing the trigger correctly: `**<TAB>`
+    4. Try manually sourcing: `source /path/to/completion.bash`
+  </Accordion>
+
+  <Accordion title="CTRL-R shows custom command warning">
+    This warning appears if you've set `FZF_CTRL_R_COMMAND` to a non-empty value. Custom commands for CTRL-R are not yet supported. Either:
+    - Remove the `FZF_CTRL_R_COMMAND` setting
+    - Set it to empty to disable CTRL-R
+    - Use `FZF_CTRL_R_OPTS` for customization instead
+  </Accordion>
+
+  <Accordion title="Slow performance">
+    1. Use faster file listing tools like `fd` instead of `find`
+    2. Add exclusions with `--walker-skip` or `--exclude`
+    3. Limit depth with `fd --max-depth`
+    4. Disable expensive preview commands
+  </Accordion>
+</AccordionGroup>
+
+## Bash-Specific Features
+
+### Predefined Command Support
+
+Bash fuzzy completion is enabled by default for:
+
+```bash
+# View list of enabled commands
+complete -p | grep _fzf
+```
+
+Common commands include: `vim`, `kill`, `ssh`, `telnet`, `cd`, and more.
+
+### nospace Commands
+
+Some commands preserve spacing behavior. Check with:
+
+```bash
+echo "$__fzf_nospace_commands"
+```
+
+## See Also
+
+- [Key Bindings](/shell/key-bindings) - Detailed key binding documentation
+- [Fuzzy Completion](/shell/fuzzy-completion) - Complete completion guide
+- [Zsh Configuration](/shell/zsh) - For Zsh users
+- [Shell Integration Overview](/shell/overview) - General concepts

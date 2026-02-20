@@ -1,0 +1,309 @@
+---
+title: Event Bindings
+description: Master fzf's powerful key and event binding system with --bind to create custom interactive workflows
+---
+
+fzf's event binding mechanism allows you to create sophisticated interactive workflows by binding custom actions to keys and events. This is the foundation of fzf's versatility.
+
+## Basic Syntax
+
+The `--bind` option allows you to bind actions to keys:
+
+```bash
+fzf --bind 'key:action'
+```
+
+You can specify multiple bindings separated by commas:
+
+```bash
+fzf --bind 'ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle-all'
+```
+
+## Common Key Notations
+
+- Single characters: `a`, `b`, `1`, `2`, `/`, etc.
+- Special keys: `enter`, `space`, `tab`, `btab` (shift-tab), `esc`
+- Control keys: `ctrl-a`, `ctrl-b`, `ctrl-/`
+- Alt keys: `alt-a`, `alt-b`, `alt-enter`
+- Function keys: `f1`, `f2`, `f3`, ..., `f12`
+- Navigation: `up`, `down`, `left`, `right`, `page-up`, `page-down`
+- Mouse: `double-click`, `scroll-up`, `scroll-down`
+
+## Built-in Actions
+
+fzf provides numerous built-in actions:
+
+### Selection Actions
+
+- `select-all` — Select all items
+- `deselect-all` — Deselect all items
+- `toggle-all` — Toggle all selections
+- `toggle` — Toggle current item
+- `toggle+down` — Toggle and move down
+
+### Navigation Actions
+
+- `up`, `down` — Move cursor
+- `page-up`, `page-down` — Scroll by page
+- `half-page-up`, `half-page-down` — Scroll by half page
+- `first`, `last` — Jump to first/last item
+- `preview-up`, `preview-down` — Scroll preview window
+
+### Preview Actions
+
+- `toggle-preview` — Show/hide preview window
+- `change-preview-window` — Change preview window layout
+- `preview-page-up`, `preview-page-down` — Scroll preview by page
+
+### Search Actions
+
+- `clear-query` — Clear query string
+- `beginning-of-line`, `end-of-line` — Move cursor in query
+- `backward-delete-char`, `delete-char` — Delete characters
+- `enable-search`, `disable-search` — Toggle fuzzy search
+
+### Output Actions
+
+- `accept` — Accept and exit (same as pressing Enter)
+- `abort` — Exit without selection
+- `print-query` — Print query string to stdout
+
+## Advanced Actions
+
+### execute and execute-silent
+
+Run external commands without leaving fzf:
+
+```bash
+# Press F1 to open the file with less
+# Press CTRL-Y to copy the line to clipboard and abort
+fzf --bind 'f1:execute(less -f {}),ctrl-y:execute-silent(echo {} | pbcopy)+abort'
+```
+
+<Tip>
+Use `execute` when you want to see the command output, and `execute-silent` when you don't.
+</Tip>
+
+### become
+
+Transform fzf into a different process:
+
+```bash
+fzf --bind 'enter:become(vim {})'
+```
+
+Advantages over command substitution:
+- Vim won't open an empty file when you press CTRL-C
+- Vim won't open an empty file on empty result
+- Handles multiple selections with whitespaces:
+  ```bash
+  fzf --multi --bind 'enter:become(vim {+})'
+  ```
+
+### reload
+
+Dynamically update the candidate list:
+
+```bash
+ps -ef | fzf --bind 'ctrl-r:reload(ps -ef)' \
+    --header='Press CTRL-R to reload' --header-lines=1
+```
+
+### transform
+
+Perform conditional actions based on fzf's state:
+
+```bash
+fd --type file |
+  fzf --prompt 'Files> ' \
+      --header 'CTRL-T: Switch between Files/Directories' \
+      --bind 'ctrl-t:transform:[[ ! $FZF_PROMPT =~ Files ]] &&
+              echo "change-prompt(Files> )+reload(fd --type file)" ||
+              echo "change-prompt(Directories> )+reload(fd --type directory)"'
+```
+
+## Chaining Actions
+
+Combine multiple actions using `+`:
+
+```bash
+fzf --bind 'ctrl-y:execute-silent(echo {} | pbcopy)+abort'
+fzf --bind 'ctrl-s:toggle-sort+reload(sort -r input.txt)'
+fzf --bind 'ctrl-r:clear-query+first+reload(ps -ef)'
+```
+
+## Event-Based Bindings
+
+Bind actions to events rather than keys:
+
+### start Event
+
+Triggered once when fzf starts:
+
+```bash
+fzf --bind "start:reload:rg --column --line-number --no-heading --color=always ''"
+```
+
+### change Event
+
+Triggered whenever the query changes:
+
+```bash
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+fzf --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --disabled --ansi
+```
+
+<Tip>
+Add a small `sleep` delay for debouncing to reduce the number of intermediate processes while typing.
+</Tip>
+
+### focus Event
+
+Triggered when the selection changes:
+
+```bash
+fzf --bind 'focus:transform-preview:bat --color=always {}'
+```
+
+### result Event
+
+Triggered when the search results change:
+
+```bash
+fzf --bind 'result:transform-list-label:echo " $FZF_MATCH_COUNT matches "'
+```
+
+## Environment Variables in Bindings
+
+fzf provides several environment variables accessible in bindings:
+
+- `$FZF_QUERY` — Current query string
+- `$FZF_PROMPT` — Current prompt string
+- `$FZF_MATCH_COUNT` — Number of matched items
+- `$FZF_SELECT_COUNT` — Number of selected items
+- `$FZF_PREVIEW_LABEL` — Current preview label
+
+```bash
+fzf --bind 'ctrl-s:transform:
+  echo "change-prompt(Matches: $FZF_MATCH_COUNT> )"'
+```
+
+## Placeholder Expressions
+
+Use these in action commands:
+
+- `{}` — Current line
+- `{+}` — Selected lines (multi-select)
+- `{q}` — Current query string
+- `{n}` — Zero-based line number
+- `{1}`, `{2}`, ... — Field tokens (with `--delimiter`)
+- `{1..3}`, `{-2..}` — Field ranges
+
+```bash
+# Open file at specific line from git grep output
+git grep --line-number . |
+  fzf --delimiter : --bind 'enter:become(vim {1} +{2})'
+```
+
+## Real-World Examples
+
+### File Operations
+
+```bash
+fzf --multi --bind 'ctrl-d:execute(rm {+})' \
+    --bind 'ctrl-o:execute(xdg-open {})' \
+    --bind 'ctrl-e:execute(${EDITOR:-vim} {})'
+```
+
+### Git Branch Switcher
+
+```bash
+git branch |
+  fzf --bind 'enter:become(git checkout {})' \
+      --bind 'ctrl-d:execute(git branch -d {})+reload(git branch)' \
+      --preview 'git log --oneline --color=always {}'
+```
+
+### Process Manager
+
+```bash
+ps -ef |
+  fzf --bind 'ctrl-r:reload(ps -ef)' \
+      --bind 'ctrl-k:execute-silent(kill -9 {2})+reload(ps -ef)' \
+      --header-lines=1 \
+      --preview 'echo {}' --preview-window down:3:wrap
+```
+
+### Interactive File Browser
+
+```bash
+fd --type f |
+  fzf --bind 'ctrl-t:transform:[[ ! $FZF_PROMPT =~ Files ]] &&
+        echo "change-prompt(Files> )+reload(fd --type f)" ||
+        echo "change-prompt(Dirs> )+reload(fd --type d)"' \
+      --bind 'enter:become(vim {})' \
+      --bind 'ctrl-o:execute(xdg-open {})' \
+      --preview '[[ -f {} ]] && bat --color=always {} || tree -C {}'
+```
+
+### Dynamic Header Updates
+
+```bash
+fzf --bind 'focus:transform-header:file --brief {}' \
+    --bind 'result:transform-header:echo "Found $FZF_MATCH_COUNT matches"'
+```
+
+## Binding Tips
+
+<Steps>
+
+1. **Start Simple**: Begin with basic bindings and add complexity gradually
+
+2. **Use Descriptive Headers**: Add `--header` to show available key bindings
+   ```bash
+   fzf --header 'CTRL-E: Edit | CTRL-D: Delete | CTRL-O: Open'
+   ```
+
+3. **Test Actions Separately**: Test execute commands outside fzf first
+
+4. **Quote Properly**: Use single quotes for the entire bind expression
+   ```bash
+   fzf --bind 'ctrl-o:execute(echo "Selected: {}")'  # Correct
+   ```
+
+5. **Handle Empty Selections**: Use guards in your commands
+   ```bash
+   fzf --bind 'ctrl-d:execute([[ -n {} ]] && rm {})'
+   ```
+
+</Steps>
+
+## Advanced Transform Patterns
+
+### Stateful Toggles
+
+```bash
+fzf --bind 'ctrl-t:transform:
+  [[ ! $FZF_PROMPT =~ Mode1 ]] &&
+    echo "change-prompt(Mode1> )+action1" ||
+    echo "change-prompt(Mode2> )+action2"'
+```
+
+### Query-Based Actions
+
+```bash
+fzf --bind 'enter:transform:
+  [[ -z $FZF_QUERY ]] &&
+    echo "abort" ||
+    echo "accept"'
+```
+
+### Conditional Reloads
+
+```bash
+fzf --bind 'ctrl-r:transform:
+  [[ $FZF_MATCH_COUNT -eq 0 ]] &&
+    echo "reload(new-source)" ||
+    echo "reload(current-source)"'
+```

@@ -1,0 +1,475 @@
+---
+title: Color Scheme Customization
+description: Comprehensive guide to customizing fzf colors, themes, and visual appearance
+---
+
+fzf provides extensive color customization options through the `--color` option. You can choose from base color schemes and customize individual UI elements to create your perfect theme.
+
+## Base Color Schemes
+
+fzf includes several built-in base color schemes optimized for different terminal backgrounds.
+
+### Dark Theme
+
+The default dark color scheme with 256-color support.
+
+```bash
+fzf --color=dark
+```
+
+Best for terminals with dark backgrounds. Provides good contrast and readability.
+
+### Light Theme
+
+Optimized for light terminal backgrounds.
+
+```bash
+fzf --color=light
+```
+
+Ideal for light-themed terminals, with darker text on lighter backgrounds.
+
+### Base16 Theme
+
+Uses only the 16 base terminal colors.
+
+```bash
+fzf --color=base16
+# or
+fzf --color=16
+```
+
+Respects your terminal's color scheme configuration, making fzf blend seamlessly with your terminal theme.
+
+### No Color (Black & White)
+
+Disables all colors for a monochrome display.
+
+```bash
+fzf --color=bw
+# or
+fzf --color=no
+# or
+fzf --no-color
+```
+
+Useful for terminals that don't support colors or when you prefer a minimal look.
+
+<Tip>
+You can also disable colors by setting the `NO_COLOR` environment variable, which fzf respects automatically.
+</Tip>
+
+## Color Elements
+
+You can customize individual UI elements by specifying them after the base scheme.
+
+### Format
+
+```bash
+fzf --color="ELEMENT:COLOR[:ATTRIBUTES]"
+```
+
+### Available Elements
+
+<Accordion title="Text Elements">
+- `fg` - Foreground color
+- `bg` - Background color
+- `input`, `input-fg` - Input text color
+- `query` - Alias for input-fg
+- `ghost` - Ghost text (placeholder)
+- `disabled` - Disabled text
+- `hl` - Highlighted substrings
+- `current-fg`, `fg+` - Current line foreground
+- `current-bg`, `bg+` - Current line background
+- `current-hl`, `hl+` - Current line highlighted substring
+- `nth` - nth field color
+- `nomatch` - No match indicator
+</Accordion>
+
+<Accordion title="List Elements">
+- `list-fg` - List foreground color
+- `list-bg` - List background color
+- `selected-fg` - Selected item foreground
+- `selected-bg` - Selected item background
+- `selected-hl` - Selected item highlighted substring
+- `alt-bg` - Alternate row background
+- `gutter` - Gutter area
+- `alt-gutter` - Alternate gutter
+</Accordion>
+
+<Accordion title="UI Elements">
+- `border` - Main border
+- `list-border` - List section border
+- `input-border` - Input section border
+- `preview-border` - Preview window border
+- `header-border` - Header section border
+- `footer-border` - Footer section border
+- `separator` - Separator line
+- `scrollbar` - Scrollbar
+- `preview-scrollbar` - Preview scrollbar
+- `gap-line` - Gap line between items
+</Accordion>
+
+<Accordion title="Labels and Indicators">
+- `label` - Border label (alias for border-label)
+- `border-label` - Main border label
+- `list-label` - List border label
+- `input-label` - Input border label
+- `preview-label` - Preview border label
+- `header-label` - Header border label
+- `footer-label` - Footer border label
+- `prompt` - Input prompt
+- `pointer` - Selection pointer
+- `marker` - Multi-select marker
+- `spinner` - Loading spinner
+- `info` - Info text
+</Accordion>
+
+<Accordion title="Preview Window">
+- `preview-fg` - Preview text color
+- `preview-bg` - Preview background
+</Accordion>
+
+<Accordion title="Header and Footer">
+- `header`, `header-fg` - Header text
+- `header-bg` - Header background
+- `footer`, `footer-fg` - Footer text
+- `footer-bg` - Footer background
+</Accordion>
+
+### Color Specification
+
+Colors can be specified in several formats:
+
+<ParamField path="Named Colors" type="string">
+  Use ANSI color names:
+  
+  - `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`
+  - `bright-black` (or `gray`/`grey`)
+  - `bright-red`, `bright-green`, `bright-yellow`, `bright-blue`, `bright-magenta`, `bright-cyan`, `bright-white`
+  
+  ```bash
+  fzf --color="fg:blue,bg:black"
+  ```
+</ParamField>
+
+<ParamField path="ANSI Color Numbers" type="number">
+  Use color numbers (0-255) for 256-color support
+  
+  ```bash
+  fzf --color="fg:15,bg:235"
+  ```
+  
+  - `-1` keeps the original color from input
+</ParamField>
+
+<ParamField path="Hex Colors" type="string">
+  Use 24-bit true color with hex notation
+  
+  ```bash
+  fzf --color="fg:#bbccdd,bg:#1e1e2e"
+  ```
+</ParamField>
+
+### Text Attributes
+
+You can add text attributes to color specifications:
+
+- `regular` - Regular text (removes all attributes)
+- `bold`, `strong` - Bold text
+- `dim` - Dimmed text
+- `italic` - Italic text
+- `underline` - Underlined text
+- `underline-double` - Double underline
+- `underline-curly` - Curly underline
+- `underline-dotted` - Dotted underline
+- `underline-dashed` - Dashed underline
+- `blink` - Blinking text
+- `reverse` - Reverse video
+- `strikethrough` - Strikethrough text
+- `strip` - Strip ANSI color codes
+
+**Example:**
+```bash
+fzf --color="prompt:blue:bold,header:yellow:italic:underline"
+```
+
+## Popular Color Themes
+
+Here are some popular color themes you can use:
+
+### Dracula
+
+<CodeGroup>
+```bash Command
+fzf --color=fg:#f8f8f2,bg:#282a36,hl:#bd93f9 \
+    --color=fg+:#f8f8f2,bg+:#44475a,hl+:#bd93f9 \
+    --color=info:#ffb86c,prompt:#50fa7b,pointer:#ff79c6 \
+    --color=marker:#ff79c6,spinner:#ffb86c,header:#6272a4
+```
+
+```bash Environment Variable
+export FZF_DEFAULT_OPTS='--color=fg:#f8f8f2,bg:#282a36,hl:#bd93f9,fg+:#f8f8f2,bg+:#44475a,hl+:#bd93f9,info:#ffb86c,prompt:#50fa7b,pointer:#ff79c6,marker:#ff79c6,spinner:#ffb86c,header:#6272a4'
+```
+</CodeGroup>
+
+### Nord
+
+<CodeGroup>
+```bash Command
+fzf --color=bg+:#3B4252,bg:#2E3440,spinner:#81A1C1,hl:#616E88 \
+    --color=fg:#D8DEE9,header:#616E88,info:#81A1C1,pointer:#81A1C1 \
+    --color=marker:#81A1C1,fg+:#D8DEE9,prompt:#81A1C1,hl+:#81A1C1
+```
+
+```bash Environment Variable
+export FZF_DEFAULT_OPTS='--color=bg+:#3B4252,bg:#2E3440,spinner:#81A1C1,hl:#616E88,fg:#D8DEE9,header:#616E88,info:#81A1C1,pointer:#81A1C1,marker:#81A1C1,fg+:#D8DEE9,prompt:#81A1C1,hl+:#81A1C1'
+```
+</CodeGroup>
+
+### Gruvbox (Dark)
+
+<CodeGroup>
+```bash Command
+fzf --color=bg+:#3c3836,bg:#32302f,spinner:#fb4934,hl:#928374 \
+    --color=fg:#ebdbb2,header:#928374,info:#8ec07c,pointer:#fb4934 \
+    --color=marker:#fb4934,fg+:#ebdbb2,prompt:#fb4934,hl+:#fb4934
+```
+
+```bash Environment Variable
+export FZF_DEFAULT_OPTS='--color=bg+:#3c3836,bg:#32302f,spinner:#fb4934,hl:#928374,fg:#ebdbb2,header:#928374,info:#8ec07c,pointer:#fb4934,marker:#fb4934,fg+:#ebdbb2,prompt:#fb4934,hl+:#fb4934'
+```
+</CodeGroup>
+
+### Monokai
+
+<CodeGroup>
+```bash Command
+fzf --color=bg+:#293739,bg:#1B1D1E,border:#808080,spinner:#E6DB74 \
+    --color=hl:#7E8E91,fg:#F8F8F2,header:#7E8E91,info:#A6E22E \
+    --color=pointer:#A6E22E,marker:#F92672,fg+:#F8F8F2,prompt:#F92672,hl+:#F92672
+```
+
+```bash Environment Variable
+export FZF_DEFAULT_OPTS='--color=bg+:#293739,bg:#1B1D1E,border:#808080,spinner:#E6DB74,hl:#7E8E91,fg:#F8F8F2,header:#7E8E91,info:#A6E22E,pointer:#A6E22E,marker:#F92672,fg+:#F8F8F2,prompt:#F92672,hl+:#F92672'
+```
+</CodeGroup>
+
+### Tokyo Night
+
+<CodeGroup>
+```bash Command
+fzf --color=fg:#c0caf5,bg:#1a1b26,hl:#bb9af7 \
+    --color=fg+:#c0caf5,bg+:#1f2335,hl+:#7dcfff \
+    --color=info:#7aa2f7,prompt:#7dcfff,pointer:#7dcfff \
+    --color=marker:#9ece6a,spinner:#9ece6a,header:#9ece6a
+```
+
+```bash Environment Variable
+export FZF_DEFAULT_OPTS='--color=fg:#c0caf5,bg:#1a1b26,hl:#bb9af7,fg+:#c0caf5,bg+:#1f2335,hl+:#7dcfff,info:#7aa2f7,prompt:#7dcfff,pointer:#7dcfff,marker:#9ece6a,spinner:#9ece6a,header:#9ece6a'
+```
+</CodeGroup>
+
+### Catppuccin (Mocha)
+
+<CodeGroup>
+```bash Command
+fzf --color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8 \
+    --color=fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc \
+    --color=marker:#f5e0dc,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8
+```
+
+```bash Environment Variable
+export FZF_DEFAULT_OPTS='--color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8,fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc,marker:#f5e0dc,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8'
+```
+</CodeGroup>
+
+### Seoul256 (Dark)
+
+<CodeGroup>
+```bash Command
+fzf --color=bg+:#3F3F3F,bg:#4B4B4B,border:#6B6B6B,spinner:#98BC99 \
+    --color=hl:#719872,fg:#D9D9D9,header:#719872,info:#BDBB72 \
+    --color=pointer:#E12672,marker:#E17899,fg+:#D9D9D9,prompt:#98BEDE,hl+:#98BC99
+```
+
+```bash Environment Variable
+export FZF_DEFAULT_OPTS='--color=bg+:#3F3F3F,bg:#4B4B4B,border:#6B6B6B,spinner:#98BC99,hl:#719872,fg:#D9D9D9,header:#719872,info:#BDBB72,pointer:#E12672,marker:#E17899,fg+:#D9D9D9,prompt:#98BEDE,hl+:#98BC99'
+```
+</CodeGroup>
+
+### Seoul256 (Light)
+
+<CodeGroup>
+```bash Command
+fzf --color=bg+:#D9D9D9,bg:#E1E1E1,border:#C8C8C8,spinner:#719899 \
+    --color=hl:#719872,fg:#616161,header:#719872,info:#727100 \
+    --color=pointer:#E12672,marker:#E17899,fg+:#616161,prompt:#0099BD,hl+:#719899
+```
+
+```bash Environment Variable
+export FZF_DEFAULT_OPTS='--color=bg+:#D9D9D9,bg:#E1E1E1,border:#C8C8C8,spinner:#719899,hl:#719872,fg:#616161,header:#719872,info:#727100,pointer:#E12672,marker:#E17899,fg+:#616161,prompt:#0099BD,hl+:#719899'
+```
+</CodeGroup>
+
+## Advanced Color Customization
+
+### Combining Base Scheme with Custom Colors
+
+You can start with a base scheme and override specific elements:
+
+```bash
+fzf --color=dark,border:#6699cc,prompt:#bd93f9:bold,marker:#50fa7b
+```
+
+### Using -1 for Original Colors
+
+Use `-1` to preserve the original color from the input:
+
+```bash
+fzf --ansi --color="hl:-1:underline,hl+:-1:underline:reverse"
+```
+
+This is particularly useful with `--ansi` to keep colors from tools like ripgrep.
+
+### Context-Aware Colors
+
+Customize colors for different sections:
+
+```bash
+fzf --color="fg:#bbccdd,fg+:#ddeeff,bg:#334455" \
+    --color="preview-fg:#aabbcc,preview-bg:#223344" \
+    --color="border:#778899,preview-border:#667788" \
+    --color="list-bg:#445566,list-border:#556677" \
+    --color="input-bg:#334455,input-border:#445566"
+```
+
+### Semantic Color Usage
+
+<Accordion title="Example: File Browser Theme">
+```bash
+fzf --walker file,dir,follow,hidden \
+    --color="fg:#e0e0e0,bg:#1a1a1a" \
+    --color="hl:#ffcc00:bold,hl+:#ffcc00:bold:reverse" \
+    --color="border:#404040,border-label:#00ff00:bold" \
+    --color="prompt:#00ccff:bold,pointer:#ff6600:bold" \
+    --color="marker:#ff0066,spinner:#00ff00" \
+    --color="info:#666666:italic" \
+    --color="preview-border:#606060" \
+    --border-label " Files " \
+    --preview 'bat --color=always {}' \
+    --preview-window 'border-rounded'
+```
+</Accordion>
+
+## Creating Your Own Theme
+
+### Step 1: Choose a Base Scheme
+
+Start with a base that matches your terminal background:
+
+```bash
+fzf --color=dark  # or light, base16, bw
+```
+
+### Step 2: Customize Key Elements
+
+Focus on these essential elements first:
+
+```bash
+fzf --color=dark \
+    --color="border:#6699cc" \
+    --color="prompt:#bd93f9:bold" \
+    --color="hl:#ffcc00,hl+:#ffcc00:reverse" \
+    --color="pointer:#ff6600:bold"
+```
+
+### Step 3: Fine-Tune Details
+
+Add colors for headers, info, and other elements:
+
+```bash
+fzf --color=dark \
+    --color="border:#6699cc,prompt:#bd93f9:bold" \
+    --color="hl:#ffcc00,hl+:#ffcc00:reverse" \
+    --color="pointer:#ff6600:bold,marker:#50fa7b" \
+    --color="info:#888888:italic,header:#999999:bold" \
+    --color="spinner:#00ff00"
+```
+
+### Step 4: Test and Iterate
+
+Test your theme with different inputs:
+
+```bash
+# Test with files
+find . -type f | head -100 | fzf --color="..."
+
+# Test with colored input
+ls --color=always | fzf --ansi --color="..."
+
+# Test with preview
+fzf --preview 'bat --color=always {}' --color="..."
+```
+
+## Color Tools and Resources
+
+### fzf Theme Playground
+
+[fzf Theme Playground](https://vitormv.github.io/fzf-themes/) by Vitor Mello is an interactive web tool where you can:
+- Visually create color schemes
+- Preview your theme in real-time
+- Export the `--color` option string
+- Browse community themes
+
+### Generating from Vim Colorschemes
+
+If you use Vim, you can generate fzf colors from your Vim colorscheme:
+
+```vim
+" In your .vimrc
+let g:fzf_colors =
+\ { 'fg':         ['fg', 'Normal'],
+  \ 'bg':         ['bg', 'Normal'],
+  \ 'preview-bg': ['bg', 'NormalFloat'],
+  \ 'hl':         ['fg', 'Comment'],
+  \ 'fg+':        ['fg', 'CursorLine', 'CursorColumn', 'Normal'],
+  \ 'bg+':        ['bg', 'CursorLine', 'CursorColumn'],
+  \ 'hl+':        ['fg', 'Statement'],
+  \ 'info':       ['fg', 'PreProc'],
+  \ 'border':     ['fg', 'Ignore'],
+  \ 'prompt':     ['fg', 'Conditional'],
+  \ 'pointer':    ['fg', 'Exception'],
+  \ 'marker':     ['fg', 'Keyword'],
+  \ 'spinner':    ['fg', 'Label'],
+  \ 'header':     ['fg', 'Comment'] }
+
+" Export the color option
+:echo fzf#wrap()
+```
+
+## Tips and Best Practices
+
+<Tip>
+**Contrast is Key**: Ensure sufficient contrast between foreground and background colors for readability.
+</Tip>
+
+<Tip>
+**Highlight Visibility**: Make sure `hl` and `hl+` colors stand out clearly from regular text.
+</Tip>
+
+<Tip>
+**Border Consistency**: Use similar colors for related borders (list-border, input-border, preview-border) for visual cohesion.
+</Tip>
+
+<Warning>
+**Terminal Compatibility**: 24-bit colors (hex format) require a terminal that supports true color. Use ANSI colors (0-255) for better compatibility.
+</Warning>
+
+<Tip>
+**Preview Background**: Set `preview-bg` to match your terminal background for seamless integration when using tools like bat or cat.
+</Tip>
+
+<Tip>
+**Test with Content**: Always test your color scheme with real content, including ANSI-colored input if you use `--ansi`.
+</Tip>

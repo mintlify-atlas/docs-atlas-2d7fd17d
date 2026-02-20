@@ -1,80 +1,303 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart guide
+description: Get up and running with fzf in 5 minutes
 ---
 
-## Get started in three steps
+Get started with fzf in just a few minutes. This guide will walk you through the essential features and get you productive quickly.
 
-Get your documentation site running locally and make your first customization.
+<Note>
+  Before starting, make sure you have [installed fzf](/installation) and set up shell integration.
+</Note>
 
-### Step 1: Set up your local environment
+## Basic usage
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+<Steps>
+  <Step title="Try your first search">
+    Start fzf and it will automatically list files in your current directory:
 
-### Step 2: Deploy your changes
+    ```bash
+    fzf
+    ```
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    Type to search, use arrow keys or `CTRL-J`/`CTRL-K` to navigate, and press `Enter` to select.
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Use with other commands">
+    fzf works as a filter for any list. Pipe data in and get selections out:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```bash
+    # Search through files and open in vim
+    vim $(fzf)
 
-### Step 3: Go live
+    # Filter git branches
+    git branch | fzf
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    # Search processes
+    ps aux | fzf
+    ```
+  </Step>
+
+  <Step title="Select multiple items">
+    Use `-m` for multi-select mode. Press `TAB` to mark items:
+
+    ```bash
+    # Select multiple files
+    fzf -m
+
+    # Delete multiple branches
+    git branch | fzf -m | xargs git branch -d
+    ```
+  </Step>
+</Steps>
+
+## Shell integration features
+
+After setting up shell integration, you get three powerful key bindings:
+
+### CTRL-T: Paste files and directories
+
+Press `CTRL-T` to launch fzf and paste selected files onto the command line:
+
+```bash
+# Press CTRL-T, select files, they appear on your command line
+vim <CTRL-T>
+```
+
+Customize with environment variables:
+
+```bash
+# Show preview window
+export FZF_CTRL_T_OPTS="--preview 'bat -n --color=always {}'"
+
+# Skip certain directories
+export FZF_CTRL_T_OPTS="--walker-skip .git,node_modules,target"
+```
+
+### CTRL-R: Search command history
+
+Press `CTRL-R` to search through your command history:
+
+```bash
+# Press CTRL-R and type to search your history
+<CTRL-R>
+```
+
+<Tip>
+  Press `CTRL-R` again to toggle between chronological and relevance sorting.
+</Tip>
+
+### ALT-C: Change directory
+
+Press `ALT-C` to quickly jump to any subdirectory:
+
+```bash
+# Press ALT-C, select a directory, and cd into it
+<ALT-C>
+```
+
+Customize with a preview:
+
+```bash
+export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"
+```
+
+## Fuzzy completion
+
+Use `**` followed by `TAB` for fuzzy completion:
+
+<CodeGroup>
+
+```bash Files
+# Complete file paths
+vim **<TAB>
+
+# Complete files under a specific directory
+vim ~/projects/**<TAB>
+
+# Complete with a prefix
+vim ~/projects/fzf**<TAB>
+```
+
+```bash Directories
+# Complete directory paths
+cd **<TAB>
+
+# Complete directories under home
+cd ~/**<TAB>
+```
+
+```bash Process IDs
+# Complete process IDs for kill command
+kill -9 **<TAB>
+```
+
+```bash SSH hosts
+# Complete SSH hostnames from config
+ssh **<TAB>
+```
+
+</CodeGroup>
+
+## Display modes
+
+Choose how fzf appears on your screen:
+
+<Tabs>
+  <Tab title="Fullscreen (default)">
+    The default fullscreen mode gives you maximum space:
+
+    ```bash
+    fzf
+    ```
+  </Tab>
+
+  <Tab title="Height mode">
+    Display fzf below the cursor to see context:
+
+    ```bash
+    fzf --height 40%
+    ```
+
+    Add to your default options:
+
+    ```bash
+    export FZF_DEFAULT_OPTS='--height 40% --layout reverse --border'
+    ```
+  </Tab>
+
+  <Tab title="Tmux popup">
+    Open fzf in a centered tmux popup:
+
+    ```bash
+    fzf --tmux center,80%
+    ```
+
+    Configure globally:
+
+    ```bash
+    export FZF_DEFAULT_OPTS='--tmux bottom,40% --border top'
+    ```
+  </Tab>
+</Tabs>
+
+## Search syntax
+
+fzf supports powerful search operators:
+
+| Syntax | Match type | Example |
+|--------|-----------|---------|
+| `text` | Fuzzy match | `fzf` matches "fuzzy finder" |
+| `'exact` | Exact match (quoted) | `'readme` matches "README" exactly |
+| `^prefix` | Prefix match | `^read` matches "readme" |
+| `suffix$` | Suffix match | `.md$` matches "README.md" |
+| `!exclude` | Inverse match | `!test` excludes lines with "test" |
+
+Combine operators with spaces (AND logic):
+
+```bash
+# Files containing "config" but not "test" ending in ".yaml"
+fzf --query "config !test .yaml$"
+```
+
+Use `|` for OR logic:
+
+```bash
+# Files ending in .go, .rb, or .py
+fzf --query ".go$ | .rb$ | .py$"
+```
+
+## Practical examples
+
+### File navigation
+
+```bash
+# Open file in editor
+vim $(fzf)
+
+# Preview files while searching
+fzf --preview 'bat --color=always {}'
+
+# Search with ripgrep
+rg --files | fzf
+```
+
+### Git workflows
+
+```bash
+# Checkout branch
+git branch | fzf | xargs git checkout
+
+# View commit
+git log --oneline | fzf --preview 'git show {1}'
+
+# Add files interactively
+git ls-files -m -o --exclude-standard | fzf -m | xargs git add
+```
+
+### Process management
+
+```bash
+# Kill process
+ps aux | fzf | awk '{print $2}' | xargs kill -9
+
+# Find process by port
+lsof -i | fzf
+```
+
+## Configuration
+
+Set default options that apply to all fzf invocations:
+
+```bash ~/.bashrc or ~/.zshrc
+# Base configuration
+export FZF_DEFAULT_OPTS='
+  --height 40%
+  --layout reverse
+  --border
+  --info inline
+  --preview "bat -n --color=always {}"
+  --bind "ctrl-/:toggle-preview"
+'
+
+# Custom file command (respects .gitignore)
+export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+
+# Apply to CTRL-T
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+```
+
+## Advanced: Interactive ripgrep
+
+Combine fzf with ripgrep for powerful interactive search:
+
+```bash
+#!/bin/bash
+# Search with ripgrep, results update as you type
+
+rg_prefix="rg --column --line-number --no-heading --color=always --smart-case"
+
+: | fzf --ansi --disabled \
+  --bind "start:reload:$rg_prefix ''" \
+  --bind "change:reload:$rg_prefix {q} || true" \
+  --bind "enter:become(vim {1} +{2})" \
+  --delimiter : \
+  --preview 'bat --color=always {1} --highlight-line {2}' \
+  --preview-window 'up,60%,border-bottom,+{2}+3/3'
+```
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Advanced features" icon="wand-magic-sparkles" href="/advanced/preview-window">
+    Learn about preview windows, key bindings, and reload
+  </Card>
+  <Card title="Shell integration" icon="terminal" href="/shell/overview">
+    Master shell key bindings and completion
+  </Card>
+  <Card title="Command options" icon="sliders" href="/reference/command-options">
+    Explore all command-line options
+  </Card>
+  <Card title="Examples" icon="book-open" href="/reference/examples">
+    See real-world usage examples
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

@@ -1,0 +1,307 @@
+---
+title: Installation
+description: Install fzf on any platform using your preferred package manager or from source.
+---
+
+fzf is distributed as a single binary and is available through multiple installation methods across all major platforms.
+
+## Quick install
+
+<Tabs>
+  <Tab title="macOS">
+    ### Using Homebrew
+    
+    ```bash
+    brew install fzf
+    ```
+    
+    ### Using MacPorts
+    
+    ```bash
+    sudo port install fzf
+    ```
+  </Tab>
+  
+  <Tab title="Linux">
+    ### Package managers
+    
+    <CodeGroup>
+    
+    ```bash Debian/Ubuntu
+    sudo apt install fzf
+    ```
+    
+    ```bash Fedora
+    sudo dnf install fzf
+    ```
+    
+    ```bash Arch Linux
+    sudo pacman -S fzf
+    ```
+    
+    ```bash Alpine Linux
+    sudo apk add fzf
+    ```
+    
+    ```bash openSUSE
+    sudo zypper install fzf
+    ```
+    
+    </CodeGroup>
+  </Tab>
+  
+  <Tab title="Windows">
+    ### Package managers
+    
+    <CodeGroup>
+    
+    ```powershell Chocolatey
+    choco install fzf
+    ```
+    
+    ```powershell Scoop
+    scoop install fzf
+    ```
+    
+    ```powershell Winget
+    winget install fzf
+    ```
+    
+    ```bash MSYS2
+    pacman -S $MINGW_PACKAGE_PREFIX-fzf
+    ```
+    
+    </CodeGroup>
+  </Tab>
+</Tabs>
+
+<Warning>
+  After installation via package managers, you need to set up shell integration separately. See [Setting up shell integration](#setting-up-shell-integration) below.
+</Warning>
+
+## All installation methods
+
+### Using Homebrew
+
+You can use [Homebrew](https://brew.sh/) on macOS or Linux:
+
+```bash
+brew install fzf
+```
+
+### Using Mise
+
+You can use [mise](https://github.com/jdx/mise) to install fzf:
+
+```bash
+mise use -g fzf@latest
+```
+
+### Linux packages
+
+Complete list of Linux package managers:
+
+| Package Manager | Linux Distribution | Command |
+| --- | --- | --- |
+| APK | Alpine Linux | `sudo apk add fzf` |
+| APT | Debian 9+/Ubuntu 19.10+ | `sudo apt install fzf` |
+| Conda | | `conda install -c conda-forge fzf` |
+| DNF | Fedora | `sudo dnf install fzf` |
+| Nix | NixOS, etc. | `nix-env -iA nixpkgs.fzf` |
+| Pacman | Arch Linux | `sudo pacman -S fzf` |
+| pkg | FreeBSD | `pkg install fzf` |
+| pkgin | NetBSD | `pkgin install fzf` |
+| pkg_add | OpenBSD | `pkg_add fzf` |
+| Portage | Gentoo | `emerge --ask app-shells/fzf` |
+| Spack | | `spack install fzf` |
+| XBPS | Void Linux | `sudo xbps-install -S fzf` |
+| Zypper | openSUSE | `sudo zypper install fzf` |
+
+### Windows packages
+
+| Package Manager | Command |
+| --- | --- |
+| Chocolatey | `choco install fzf` |
+| Scoop | `scoop install fzf` |
+| Winget | `winget install fzf` |
+| MSYS2 (pacman) | `pacman -S $MINGW_PACKAGE_PREFIX-fzf` |
+
+### Using git
+
+Clone the repository and run the install script:
+
+```bash
+git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+~/.fzf/install
+```
+
+The install script will:
+- Add fzf to your `$PATH`
+- Set up shell integration (key bindings and fuzzy completion)
+- Prompt you for configuration options
+
+<Tip>
+  This method automatically sets up shell integration for you.
+</Tip>
+
+### Binary releases
+
+Download the latest binary for your platform from the releases page:
+
+- [https://github.com/junegunn/fzf/releases](https://github.com/junegunn/fzf/releases)
+
+Extract the binary and place it in your `$PATH`:
+
+```bash
+# Example for Linux
+tar -xzf fzf-*-linux_amd64.tar.gz
+sudo mv fzf /usr/local/bin/
+```
+
+## Setting up shell integration
+
+Shell integration provides key bindings (CTRL-T, CTRL-R, ALT-C) and fuzzy completion for your shell.
+
+<Note>
+  If you installed fzf using git, shell integration is already configured. Skip this section.
+</Note>
+
+Add the following line to your shell configuration file:
+
+<Tabs>
+  <Tab title="Bash">
+    Add to `~/.bashrc`:
+    
+    ```bash
+    # Set up fzf key bindings and fuzzy completion
+    eval "$(fzf --bash)"
+    ```
+  </Tab>
+  
+  <Tab title="Zsh">
+    Add to `~/.zshrc`:
+    
+    ```zsh
+    # Set up fzf key bindings and fuzzy completion
+    source <(fzf --zsh)
+    ```
+  </Tab>
+  
+  <Tab title="Fish">
+    Add to `~/.config/fish/config.fish`:
+    
+    ```fish
+    # Set up fzf key bindings
+    fzf --fish | source
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+  The `--bash`, `--zsh`, and `--fish` options are available in fzf 0.48.0 or later.
+</Note>
+
+### Older versions or manual setup
+
+For finer control or older versions, source individual script files from the `/shell` directory:
+
+```bash
+# Find the location of the files
+apt show fzf  # On Debian/Ubuntu
+brew info fzf # On macOS with Homebrew
+```
+
+### Disabling specific key bindings
+
+You can disable CTRL-T, CTRL-R, or ALT-C bindings by setting the corresponding variable to empty:
+
+<CodeGroup>
+
+```bash Bash
+# Disable CTRL-R and ALT-C
+FZF_CTRL_R_COMMAND= FZF_ALT_C_COMMAND= eval "$(fzf --bash)"
+```
+
+```zsh Zsh
+# Disable CTRL-R and ALT-C
+FZF_CTRL_R_COMMAND= FZF_ALT_C_COMMAND= source <(fzf --zsh)
+```
+
+```fish Fish
+# Disable CTRL-R and ALT-C
+fzf --fish | FZF_CTRL_R_COMMAND= FZF_ALT_C_COMMAND= source
+```
+
+</CodeGroup>
+
+<Warning>
+  Set the variables before sourcing the script. Setting them after will have no effect.
+</Warning>
+
+## Vim/Neovim plugin
+
+If you use [vim-plug](https://github.com/junegunn/vim-plug), add this to your Vim configuration:
+
+```vim
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
+```
+
+- `junegunn/fzf` provides the basic library functions
+- `fzf#install()` ensures you have the latest binary
+- `junegunn/fzf.vim` provides useful commands
+
+<Tip>
+  For Neovim users who prefer Lua-based plugins, check out [fzf-lua](https://github.com/ibhagwan/fzf-lua).
+</Tip>
+
+## Upgrading fzf
+
+Upgrade fzf using the same method you used to install it:
+
+```bash
+# Git installation
+cd ~/.fzf && git pull && ./install
+
+# Homebrew
+brew update && brew upgrade fzf
+
+# MacPorts
+sudo port upgrade fzf
+
+# Chocolatey
+choco upgrade fzf
+
+# Vim-plug
+:PlugUpdate fzf
+```
+
+## Verifying installation
+
+After installation, verify that fzf is working:
+
+```bash
+# Check version
+fzf --version
+
+# Test basic functionality
+ls | fzf
+
+# Test shell integration (if configured)
+# Press CTRL-R in your terminal
+```
+
+<Tip>
+  Run `fzf --help` to see all available options, or `fzf --man` to view the full manual.
+</Tip>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get started with fzf in 5 minutes
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration">
+    Customize fzf to fit your workflow
+  </Card>
+</CardGroup>

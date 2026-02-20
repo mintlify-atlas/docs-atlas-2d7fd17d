@@ -1,0 +1,297 @@
+---
+title: Shell Key Bindings
+description: Interactive key bindings for file selection, command history search, and directory navigation
+---
+
+fzf provides three powerful key bindings that integrate seamlessly into your shell workflow. These bindings work in Bash, Zsh, and Fish shells after [setting up shell integration](/shell/overview).
+
+## CTRL-T - File and Directory Selection
+
+Paste selected files and directories onto the command line.
+
+### How It Works
+
+1. Press `CTRL-T` at any point on your command line
+2. fzf opens with a list of files and directories
+3. Search using fuzzy matching
+4. Select one or multiple items (use `TAB` for multi-select)
+5. Press `Enter` to paste the selections onto your command line
+
+```bash
+# Example workflow
+$ vim <CTRL-T>
+# fzf opens, you search for "config"
+# Select ~/.bashrc and press Enter
+$ vim /home/user/.bashrc
+```
+
+### Customization
+
+<Steps>
+  <Step title="Configure the source command">
+    By default, CTRL-T uses `--walker file,dir,follow,hidden` to traverse the file system. Override this with `FZF_CTRL_T_COMMAND`:
+
+    ```bash
+    # Use fd to respect .gitignore
+    export FZF_CTRL_T_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
+    ```
+  </Step>
+
+  <Step title="Add fzf options">
+    Customize the fzf interface with `FZF_CTRL_T_OPTS`:
+
+    ```bash
+    # Add preview with bat
+    export FZF_CTRL_T_OPTS="
+      --walker-skip .git,node_modules,target
+      --preview 'bat -n --color=always {}'
+      --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+    ```
+  </Step>
+
+  <Step title="Alternative: Configure walker options">
+    Instead of overriding the command, you can configure walker options:
+
+    ```bash
+    export FZF_CTRL_T_OPTS="--walker-skip .git,node_modules,target"
+    ```
+  </Step>
+</Steps>
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|--------|
+| `FZF_CTRL_T_COMMAND` | Command to generate file list | Uses `--walker` |
+| `FZF_CTRL_T_OPTS` | Additional fzf options | Empty |
+
+<Note>
+Set `FZF_CTRL_T_COMMAND` to an empty string when sourcing the script to disable this binding.
+</Note>
+
+## CTRL-R - Command History Search
+
+Search through your shell command history and paste the selected command onto the command line.
+
+### How It Works
+
+1. Press `CTRL-R` to open history search
+2. Type to fuzzy search through your command history
+3. Press `CTRL-R` again to toggle between relevance and chronological order
+4. Press `ALT-R` to toggle "raw" mode (shows surrounding context)
+5. Press `Enter` to paste the command
+
+```bash
+# Example workflow
+$ <CTRL-R>
+# fzf opens with command history
+# Type "docker" to filter
+# Select "docker ps -a" and press Enter
+$ docker ps -a
+```
+
+### Additional Controls
+
+- **CTRL-R** (while in fzf): Toggle sort by relevance/chronological order
+- **ALT-R**: Toggle raw mode to see surrounding items
+- **CTRL-/** or **ALT-/**: Toggle line wrapping
+- **CTRL-N** / **CTRL-P**: Navigate between matching items (in raw mode)
+
+### Customization
+
+```bash
+# Add custom key binding to copy to clipboard
+export FZF_CTRL_R_OPTS="
+  --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+  --color header:italic
+  --header 'Press CTRL-Y to copy command into clipboard'"
+```
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|--------|
+| `FZF_CTRL_R_OPTS` | Additional fzf options | Empty |
+| `FZF_CTRL_R_COMMAND` | Custom command override | Not supported |
+
+<Warning>
+Custom override via `FZF_CTRL_R_COMMAND` is not yet supported and will emit a warning if set to a non-empty value.
+</Warning>
+
+<Note>
+Set `FZF_CTRL_R_COMMAND` to an empty string when sourcing the script to disable this binding.
+</Note>
+
+## ALT-C - Directory Navigation
+
+Change to a selected directory interactively.
+
+### How It Works
+
+1. Press `ALT-C` (or `ESC-C` on some terminals)
+2. fzf opens with a list of directories
+3. Search using fuzzy matching
+4. Press `Enter` to change to the selected directory
+
+```bash
+# Example workflow
+$ pwd
+/home/user
+$ <ALT-C>
+# fzf opens with directory list
+# Search for "projects"
+# Select ~/code/projects and press Enter
+$ pwd
+/home/user/code/projects
+```
+
+### Customization
+
+<Steps>
+  <Step title="Configure the source command">
+    By default, ALT-C uses `--walker dir,follow,hidden`. Override with `FZF_ALT_C_COMMAND`:
+
+    ```bash
+    # Use fd for directory listing
+    export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+    ```
+  </Step>
+
+  <Step title="Add preview">
+    Show directory contents with a tree preview:
+
+    ```bash
+    export FZF_ALT_C_OPTS="
+      --walker-skip .git,node_modules,target
+      --preview 'tree -C {}'"
+    ```
+
+    Or use `ls` for a simpler preview:
+
+    ```bash
+    export FZF_ALT_C_OPTS="
+      --preview 'ls -lA --color=always {}'"
+    ```
+  </Step>
+</Steps>
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|--------|
+| `FZF_ALT_C_COMMAND` | Command to generate directory list | Uses `--walker dir` |
+| `FZF_ALT_C_OPTS` | Additional fzf options | Empty |
+
+<Note>
+Set `FZF_ALT_C_COMMAND` to an empty string when sourcing the script to disable this binding.
+</Note>
+
+## Global Configuration
+
+All three bindings respect `FZF_DEFAULT_OPTS` for global settings, but you can override them individually:
+
+```bash
+# Global settings for all fzf invocations
+export FZF_DEFAULT_OPTS='--height 40% --layout reverse --border'
+
+# Specific settings for CTRL-T (adds to global settings)
+export FZF_CTRL_T_OPTS="--preview 'bat --color=always {}'"
+
+# Specific settings for CTRL-R (adds to global settings)
+export FZF_CTRL_R_OPTS="--sort"
+
+# Specific settings for ALT-C (adds to global settings)
+export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"
+```
+
+## Display Mode Configuration
+
+Configure display modes separately for each binding:
+
+```bash
+# Use tmux popup for CTRL-T
+export FZF_CTRL_T_OPTS="--tmux center,80%"
+
+# Use height mode for CTRL-R with specific height
+export FZF_CTRL_R_OPTS="--tmux bottom,60% --height 60% --border top"
+
+# Use different layout for ALT-C
+export FZF_ALT_C_OPTS="--height 50% --layout reverse-list"
+```
+
+## Advanced Examples
+
+### CTRL-T with Advanced Preview
+
+```bash
+export FZF_CTRL_T_OPTS="
+  --preview 'if [ -d {} ]; then tree -C {} | head -200; else bat -n --color=always {} | head -500; fi'
+  --bind 'ctrl-/:change-preview-window(right,70%|down,40%,border-horizontal|hidden|)'
+  --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)'
+  --header 'CTRL-/: change preview | CTRL-Y: copy path'"
+```
+
+### CTRL-R with Timestamps
+
+```bash
+# Note: Depends on shell history format
+export FZF_CTRL_R_OPTS="
+  --preview 'echo {}'
+  --preview-window up:3:hidden:wrap
+  --bind 'ctrl-/:toggle-preview'
+  --bind 'ctrl-e:execute(echo {2..} > ~/command.txt)+abort'
+  --color header:italic
+  --header 'Press CTRL-/: toggle preview | CTRL-E: export to file'"
+```
+
+### ALT-C with Git Status
+
+```bash
+export FZF_ALT_C_OPTS="
+  --preview 'tree -C {} | head -100'
+  --bind 'ctrl-g:reload(fd --type d --hidden --follow --exclude .git . 2> /dev/null | grep -v .git)'
+  --header 'CTRL-G: reload without .git dirs'"
+```
+
+## Platform-Specific Notes
+
+### macOS
+
+On macOS, `ALT-C` might be difficult to press. Alternatives:
+- Press `ESC` then `C`
+- Configure your terminal to send the correct key code
+- Remap to a different key binding
+
+### Windows
+
+Key bindings work in Git Bash, WSL, and other Unix-like environments on Windows.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Key binding doesn't work">
+    - Ensure you've sourced the fzf shell integration script
+    - Check that the `*_COMMAND` variable isn't set to empty
+    - Verify fzf is in your PATH
+    - Try running the underlying function directly (e.g., `__fzf_select__` in bash)
+  </Accordion>
+
+  <Accordion title="ALT-C doesn't respond">
+    - Try `ESC` followed by `C` instead
+    - Check your terminal's key mapping configuration
+    - Some terminals require special configuration for ALT key
+  </Accordion>
+
+  <Accordion title="CTRL-R shows warning about custom command">
+    - `FZF_CTRL_R_COMMAND` is set but custom commands aren't supported yet
+    - Set it to empty string if you want to disable CTRL-R
+    - Use `FZF_CTRL_R_OPTS` for customization instead
+  </Accordion>
+</AccordionGroup>
+
+## See Also
+
+- [Fuzzy Completion](/shell/fuzzy-completion) - Tab completion with `**` trigger
+- [Bash Configuration](/shell/bash) - Bash-specific setup
+- [Zsh Configuration](/shell/zsh) - Zsh-specific setup
+- [Fish Configuration](/shell/fish) - Fish-specific setup

@@ -1,0 +1,205 @@
+---
+title: Basic Usage
+description: Learn the fundamentals of using fzf - reading from stdin, navigating the finder, and selecting items
+---
+
+fzf is an interactive filter program that reads from STDIN and writes selected items to STDOUT.
+
+## Reading from STDIN
+
+The most basic usage pattern pipes data into fzf:
+
+```bash
+find * -type f | fzf > selected
+```
+
+This command:
+1. Generates a list of files via `find`
+2. Pipes the list into fzf for interactive filtering
+3. Writes the selected item to a file called `selected`
+
+## Direct File System Traversal
+
+Without STDIN, fzf automatically traverses the file system from the current directory:
+
+```bash
+vim $(fzf)
+```
+
+<Note>
+You can customize the default behavior by:
+- Setting `$FZF_DEFAULT_COMMAND` to a command that generates your desired list
+- Setting `--walker`, `--walker-root`, and `--walker-skip` options in `$FZF_DEFAULT_OPTS`
+</Note>
+
+<Tip>
+For a more robust solution with multiple selections, use `xargs`:
+
+```bash
+fzf --print0 | xargs -0 -o vim
+```
+</Tip>
+
+## Navigating the Finder
+
+Once fzf is running, use these key bindings to navigate:
+
+### Cursor Movement
+
+- **CTRL-K** / **CTRL-J** (or **CTRL-P** / **CTRL-N**) - Move cursor up and down
+- **Enter** - Select the highlighted item and exit
+- **CTRL-C** / **CTRL-G** / **ESC** - Exit without selecting
+
+### Multi-Select Mode
+
+Enable multi-select with the `-m` flag:
+
+```bash
+fzf -m
+```
+
+In multi-select mode:
+- **TAB** - Mark/unmark current item
+- **Shift-TAB** - Mark/unmark current item (reverse direction)
+- Multiple items can be selected before pressing Enter
+
+### Mouse Support
+
+fzf supports mouse interactions:
+- **Scroll** - Navigate through items
+- **Click** - Select an item
+- **Double-click** - Select and accept
+- **Shift-click** and **Shift-scroll** - Mark items in multi-select mode
+
+### Emacs-Style Key Bindings
+
+fzf supports standard Emacs-style editing keys:
+
+- **CTRL-A** - Beginning of line
+- **CTRL-E** - End of line
+- **CTRL-W** - Delete word backward
+- **CTRL-U** - Clear line
+- **ALT-B** - Move backward one word
+- **ALT-F** - Move forward one word
+
+## Using the Output
+
+### Command Substitution
+
+```bash
+# Open selected file in vim
+vim $(fzf)
+
+# Change to selected directory
+cd $(find * -type d | fzf)
+
+# Kill selected process
+kill -9 $(ps -ef | fzf | awk '{print $2}')
+```
+
+### Turning into a Different Process
+
+Use `become(...)` to transform fzf into another process:
+
+```bash
+fzf --bind 'enter:become(vim {})'
+```
+
+This approach has several advantages:
+- Vim won't open an empty file when you press CTRL-C
+- Vim won't open an empty file when you press ENTER on empty results
+- Handles multiple selections with whitespaces:
+  ```bash
+  fzf --multi --bind 'enter:become(vim {+})'
+  ```
+
+### Multiple Actions
+
+Set up different key bindings for different actions:
+
+```bash
+fzf --bind 'enter:become(vim {}),ctrl-e:become(emacs {})'
+```
+
+## Input and Output Formats
+
+### NUL-Delimited Input
+
+For handling filenames with special characters:
+
+```bash
+find . -print0 | fzf --read0 --print0 | xargs -0 -o vim
+```
+
+### ANSI Color Codes
+
+Preserve colors in input:
+
+```bash
+ls --color=always | fzf --ansi
+```
+
+<Note>
+`--ansi` makes initial scanning slower, so it's not recommended for `$FZF_DEFAULT_OPTS`.
+</Note>
+
+## Environment Variables
+
+### FZF_DEFAULT_COMMAND
+
+Specify the default command when input is tty:
+
+```bash
+export FZF_DEFAULT_COMMAND='fd --type f'
+```
+
+### FZF_DEFAULT_OPTS
+
+Set default options:
+
+```bash
+export FZF_DEFAULT_OPTS="--layout=reverse --inline-info"
+```
+
+### FZF_DEFAULT_OPTS_FILE
+
+Manage options in a file:
+
+```bash
+export FZF_DEFAULT_OPTS_FILE=~/.fzfrc
+```
+
+## Common Examples
+
+<CodeGroup>
+
+```bash File Search
+# Find and edit a file
+vim $(fzf)
+
+# Find files with preview
+fzf --preview 'cat {}'
+```
+
+```bash Process Selection
+# Kill a process
+ps -ef | fzf --header-lines=1 | awk '{print $2}' | xargs kill
+```
+
+```bash Git Integration
+# Checkout a git branch
+git branch | fzf | xargs git checkout
+
+# View git commit
+git log --oneline | fzf --preview 'git show {1}'
+```
+
+```bash Directory Navigation
+# cd into a directory
+cd $(find * -type d | fzf)
+
+# Using fd for better performance
+cd $(fd --type d | fzf)
+```
+
+</CodeGroup>
